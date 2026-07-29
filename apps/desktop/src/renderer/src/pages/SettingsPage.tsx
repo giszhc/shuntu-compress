@@ -1,9 +1,7 @@
 /**
- * 设置页：默认参数、主题、libvips 管理、恢复默认。
+ * 设置页：默认参数、主题、下载缓存管理、恢复默认。
  * 每次修改立即持久化到主进程 settings.json。
  */
-import { useEffect, useState } from "react";
-import type { VipsStatus } from "../../../shared/ipc-types";
 import { useSettingsStore } from "../stores/settingsStore";
 import { useUiStore } from "../stores/uiStore";
 
@@ -12,18 +10,6 @@ export function SettingsPage(): React.JSX.Element {
   const updateSettings = useSettingsStore(s => s.updateSettings);
   const resetSettings = useSettingsStore(s => s.resetSettings);
   const toast = useUiStore(s => s.toast);
-
-  const [vips, setVips] = useState<VipsStatus | null>(null);
-
-  useEffect(() => {
-    let alive = true;
-    void window.app.vipsDetect().then(status => {
-      if (alive) setVips(status);
-    });
-    return () => {
-      alive = false;
-    };
-  }, []);
 
   if (!settings) return <div className="page" />;
 
@@ -164,20 +150,12 @@ export function SettingsPage(): React.JSX.Element {
       </div>
 
       <div className="settings-group">
-        <h2>压缩引擎</h2>
+        <h2>下载缓存</h2>
         <div className="settings-card">
           <div className="settings-row">
             <div className="info">
-              <div className="title">
-                {vips === null
-                  ? "检测中…"
-                  : vips.available
-                    ? `已安装 · ${vips.version ?? "未知版本"}`
-                    : "未安装"}
-              </div>
-              <div className="desc" title={vips?.path}>
-                {vips?.path ?? (vips?.available === false ? "点击开始压缩时可一键安装" : "")}
-              </div>
+              <div className="title">清除下载缓存</div>
+              <div className="desc">清理压缩引擎安装包的本地缓存</div>
             </div>
             <div className="control">
               <button
@@ -186,11 +164,7 @@ export function SettingsPage(): React.JSX.Element {
                 onClick={() => {
                   void window.app
                     .vipsClearCache()
-                    .then(() => window.app.vipsDetect())
-                    .then(status => {
-                      setVips(status);
-                      toast("已清除引擎下载缓存", "success");
-                    })
+                    .then(() => toast("已清除下载缓存", "success"))
                     .catch((err: unknown) => {
                       toast(err instanceof Error ? err.message : "清除失败", "error");
                     });
