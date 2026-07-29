@@ -1,0 +1,22 @@
+{
+  "name": "shuntu-desktop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "瞬图压缩 · 桌面端",
+  "scripts": {
+    "dev": "pnpm --filter vips-thumbnail-desktop dev",
+    "build": "pnpm --filter vips-thumbnail-desktop build",
+    "package": "pnpm --filter vips-thumbnail-desktop package",
+    "dist:win": "pnpm --filter vips-thumbnail-desktop dist:win",
+    "typecheck": "pnpm --filter @giszhc/vips-thumbnail-core typecheck && pnpm --filter vips-thumbnail-desktop typecheck",
+    "test": "pnpm --filter @giszhc/vips-thumbnail-core test && pnpm --filter vips-thumbnail-desktop test"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "author": {
+    "name": "giszhc",
+    "email": "giszhc@163.com"
+  },
+  "license": "MIT"
+}

@@ -1,0 +1,11 @@
+packages:
+  - packages/*
+  - apps/*
+nodeLinker: hoisted
+allowBuilds:
+  esbuild: true
+  electron: true
+  electron-winstaller: true
+onlyBuiltDependencies:
+  - esbuild
+  - electron

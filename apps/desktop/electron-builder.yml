@@ -1,0 +1,61 @@
+appId: com.giszhc.vips-thumbnail-desktop
+productName: 瞬图压缩
+copyright: Copyright © 2026 giszhc
+
+directories:
+  output: release
+  buildResources: build
+
+files:
+  - out/**
+  - package.json
+  - "!**/*.map"
+
+asar: true
+
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  icon: build/icon.ico
+  artifactName: "vips-thumbnail-desktop-setup-${version}.exe"
+  # 托盘图标：运行时从 resources 根目录读取
+  extraResources:
+    - from: build/icon.ico
+      to: icon.ico
+
+mac:
+  target:
+    - target: dmg
+      arch:
+        - universal
+  icon: build/icon.icns
+  category: public.app-category.photography
+  darkModeSupport: true
+  artifactName: "vips-thumbnail-desktop-${version}-${arch}.dmg"
+
+dmg:
+  title: "瞬图压缩 ${version}"
+  contents:
+    - x: 130
+      y: 220
+    - x: 410
+      y: 220
+      type: link
+      path: /Applications
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: 瞬图压缩
+  # 中文安装界面
+  installerLanguages:
+    - zh_CN
+  language: 2052
+
+# 不发布，仅本地打包
+publish: null

@@ -1,0 +1,191 @@
+/**
+ * 主进程入口：单实例、窗口创建、安全配置、服务装配。
+ */
+import path from "node:path";
+import { BrowserWindow, Menu, Tray, app, nativeImage, nativeTheme, shell } from "electron";
+import { IPC_EVENTS, type Settings } from "../shared/ipc-types";
+import { registerIpc, sendToAll } from "./ipc";
+import { DialogService } from "./services/dialogService";
+import { ProcessService } from "./services/processService";
+import { SettingsService } from "./services/settingsService";
+import { ThumbnailService } from "./services/thumbnailService";
+import { VipsService } from "./services/vipsService";
+
+// e2e/测试注入：--force-theme=light|dark 覆盖系统主题；--vips-cache-root=<dir> 注入缓存目录；
+// --user-data-dir=<dir> 隔离用户数据（必须在单实例锁之前设置）
+const forcedTheme = app.commandLine.getSwitchValue("force-theme");
+const injectedCacheRoot = app.commandLine.getSwitchValue("vips-cache-root") || undefined;
+const userDataDir = app.commandLine.getSwitchValue("user-data-dir");
+if (userDataDir) {
+  app.setPath("userData", userDataDir);
+}
+
+if (forcedTheme === "light" || forcedTheme === "dark") {
+  nativeTheme.themeSource = forcedTheme;
+}
+
+const isSingleInstance = app.requestSingleInstanceLock();
+if (!isSingleInstance) {
+  app.quit();
+}
+
+let mainWindow: BrowserWindow | null = null;
+let tray: Tray | null = null;
+// Windows 下点击关闭按钮仅隐藏到托盘；只有托盘"退出"或系统退出时才真正关闭
+let isQuitting = false;
+
+const settingsService = new SettingsService();
+const thumbnailService = new ThumbnailService();
+const dialogService = new DialogService(() => mainWindow);
+const vipsService = new VipsService(
+  {
+    onInstallProgress: progress => sendToAll(IPC_EVENTS.installProgress, progress),
+    onInstallError: error => sendToAll(IPC_EVENTS.installError, error)
+  },
+  injectedCacheRoot
+);
+const processService = new ProcessService(vipsService, {
+  onScanProgress: event => sendToAll(IPC_EVENTS.scanProgress, event),
+  onTaskProgress: event => sendToAll(IPC_EVENTS.taskProgress, event),
+  onTaskItemDone: event => sendToAll(IPC_EVENTS.taskItemDone, event),
+  onTaskFinished: event => sendToAll(IPC_EVENTS.taskFinished, event)
+});
+
+function resolveThemeBackground(settings: Settings): string {
+  const dark =
+    settings.theme === "dark" ||
+    (settings.theme === "system" && nativeTheme.shouldUseDarkColors);
+  return dark ? "#111418" : "#EEF1F5";
+}
+
+function showMainWindow(): void {
+  if (!mainWindow) {
+    createWindow();
+    return;
+  }
+  if (mainWindow.isMinimized()) mainWindow.restore();
+  mainWindow.show();
+  mainWindow.focus();
+}
+
+function resolveTrayIconPath(): string {
+  // 打包后图标作为 extraResources 放在 resources 根目录；开发态直接用 build/icon.ico
+  return app.isPackaged
+    ? path.join(process.resourcesPath, "icon.ico")
+    : path.join(app.getAppPath(), "build", "icon.ico");
+}
+
+function createTray(): void {
+  if (process.platform !== "win32" || tray) return;
+  const image = nativeImage.createFromPath(resolveTrayIconPath());
+  tray = new Tray(image);
+  tray.setToolTip("瞬图压缩");
+  // 左键单击托盘：显示主窗口
+  tray.on("click", showMainWindow);
+  // 右键：上下文菜单（显示窗口 / 退出）
+  tray.setContextMenu(
+    Menu.buildFromTemplate([
+      { label: "显示窗口", click: showMainWindow },
+      { type: "separator" },
+      {
+        label: "退出",
+        click: () => {
+          isQuitting = true;
+          app.quit();
+        }
+      }
+    ])
+  );
+}
+
+function createWindow(): void {
+  const settings = settingsService.get();
+
+  mainWindow = new BrowserWindow({
+    width: 1120,
+    height: 760,
+    minWidth: 880,
+    minHeight: 620,
+    show: false,
+    frame: false,
+    titleBarStyle: "hidden",
+    backgroundColor: resolveThemeBackground(settings),
+    webPreferences: {
+      preload: path.join(__dirname, "../preload/index.js"),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: false,
+      spellcheck: false
+    }
+  });
+
+  mainWindow.once("ready-to-show", () => mainWindow?.show());
+
+  mainWindow.on("maximize", () => sendToAll(IPC_EVENTS.maximizeChange, true));
+  mainWindow.on("unmaximize", () => sendToAll(IPC_EVENTS.maximizeChange, false));
+  // Windows：点击关闭 = 隐藏到托盘，不退出程序（e2e 注入 --no-tray 时保持原生关闭行为）
+  mainWindow.on("close", event => {
+    if (
+      process.platform === "win32" &&
+      !isQuitting &&
+      !app.commandLine.hasSwitch("no-tray")
+    ) {
+      event.preventDefault();
+      mainWindow?.hide();
+    }
+  });
+  mainWindow.on("closed", () => {
+    mainWindow = null;
+  });
+
+  // 拦截新窗口/外链：一律交给系统浏览器，渲染层无法打开任意页面
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    if (url.startsWith("https://")) void shell.openExternal(url);
+    return { action: "deny" };
+  });
+  mainWindow.webContents.on("will-navigate", (event, url) => {
+    event.preventDefault();
+    // 仅放行 mailto（关于页联系邮箱），交给系统默认邮件客户端
+    if (url.startsWith("mailto:")) void shell.openExternal(url);
+  });
+
+  if (process.env.ELECTRON_RENDERER_URL) {
+    void mainWindow.loadURL(process.env.ELECTRON_RENDERER_URL);
+  } else {
+    void mainWindow.loadFile(path.join(__dirname, "../renderer/index.html"));
+  }
+}
+
+app.on("second-instance", () => {
+  // 再次启动时若窗口隐藏在托盘中，也要重新显示
+  showMainWindow();
+});
+
+app.whenReady().then(() => {
+  registerIpc({
+    vips: vipsService,
+    process: processService,
+    thumbnail: thumbnailService,
+    dialog: dialogService,
+    settings: settingsService
+  });
+  createWindow();
+  if (!app.commandLine.hasSwitch("no-tray")) createTray();
+
+  app.on("activate", () => {
+    // macOS：点击 Dock 图标时恢复窗口
+    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+    else showMainWindow();
+  });
+});
+
+app.on("window-all-closed", () => {
+  processService.cancelAll();
+  // macOS 惯例：关闭窗口后应用常驻 Dock，不退出
+  if (process.platform !== "darwin") app.quit();
+});
+
+app.on("before-quit", () => {
+  isQuitting = true;
+  processService.cancelAll();
+});

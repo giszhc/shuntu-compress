@@ -1,0 +1,242 @@
+/**
+ * 压缩任务编排：扫描 → 输出规划 → 并发队列 → 进度/结果事件。
+ * 全部在主进程执行，渲染进程只收事件。
+ */
+import fs from "node:fs";
+import path from "node:path";
+import {
+  ConfigError,
+  DEFAULT_OUTPUT_DIR_NAME,
+  TaskQueue,
+  isAbortError,
+  planOutputs,
+  processImage,
+  scanPathsAsync
+} from "@giszhc/vips-thumbnail-core";
+import type {
+  FileEntry,
+  OutputPlanRequest,
+  TaskResult
+} from "@giszhc/vips-thumbnail-core";
+import type {
+  ScanProgressEvent,
+  ScanRequest,
+  TaskFinishedEvent,
+  TaskItemDoneEvent,
+  TaskProgressEvent,
+  TaskStartRequest,
+  TaskSummary
+} from "../../shared/ipc-types";
+import type { VipsService } from "./vipsService";
+
+export interface ProcessServiceEvents {
+  onScanProgress: (event: ScanProgressEvent) => void;
+  onTaskProgress: (event: TaskProgressEvent) => void;
+  onTaskItemDone: (event: TaskItemDoneEvent) => void;
+  onTaskFinished: (event: TaskFinishedEvent) => void;
+}
+
+interface RunningTask {
+  taskId: string;
+  queue: TaskQueue;
+}
+
+export class ProcessService {
+  private taskCounter = 0;
+  private running: RunningTask | null = null;
+
+  constructor(
+    private readonly vips: VipsService,
+    private readonly events: ProcessServiceEvents
+  ) {}
+
+  get hasRunningTask(): boolean {
+    return this.running !== null;
+  }
+
+  async scan(request: ScanRequest): Promise<FileEntry[]> {
+    // 列表不展示尺寸/缩略图，跳过逐文件解析图片头；进度事件节流，避免海量文件时 IPC 风暴
+    let lastEmit = 0;
+    const emit = (scanned: number, currentPath: string, force = false): void => {
+      const now = Date.now();
+      if (!force && now - lastEmit < 100) return;
+      lastEmit = now;
+      this.events.onScanProgress({ scanned, currentPath });
+    };
+    const entries = await scanPathsAsync(
+      request.paths,
+      { recursive: request.recursive, skipImageInfo: true },
+      {
+        onProgress: progress => emit(progress.scanned, progress.currentPath)
+      }
+    );
+    emit(entries.length, "", true);
+    return entries;
+  }
+
+  /**
+   * 启动压缩任务。outputDir 为 null 时按「各文件源目录旁 compressed」规则。
+   * 返回 taskId；任务异步执行，完成后推 task:finished。
+   */
+  async start(request: TaskStartRequest): Promise<{ taskId: string }> {
+    if (this.running) {
+      throw new ConfigError("已有任务进行中，请先取消或等待完成");
+    }
+    const vipsCommand = await this.vips.ensureReady();
+
+    const taskId = `task-${++this.taskCounter}`;
+    const startedAt = Date.now();
+
+    // 输出规划：全局去重、永不覆盖原图
+    const planRequests: OutputPlanRequest[] = request.entries.map(entry => ({
+      input: entry.absolutePath,
+      outDir:
+        request.outputDir ??
+        path.join(entry.rootDir, DEFAULT_OUTPUT_DIR_NAME),
+      mode: request.mode,
+      ext: request.options.ext,
+      baseDir: entry.rootDir,
+      dedup: true
+    }));
+    const outputPlan = planOutputs(planRequests);
+
+    const queue = new TaskQueue({ concurrency: request.concurrency });
+    this.running = { taskId, queue };
+
+    const total = request.entries.length;
+
+    // 异步执行，不阻塞 IPC 返回
+    void (async () => {
+      let results: TaskResult[] = [];
+      try {
+        results = await queue.run(
+          request.entries,
+          async (entry, signal): Promise<TaskResult> => {
+            const output = outputPlan.get(entry.absolutePath);
+            if (!output) {
+              return {
+                input: entry.absolutePath,
+                output: "",
+                status: "failed",
+                originalSize: entry.size,
+                compressedSize: 0,
+                error: "无法规划输出路径"
+              };
+            }
+            try {
+              await fs.promises.mkdir(path.dirname(output), { recursive: true });
+              await processImage(entry.absolutePath, output, {
+                ...request.options,
+                vipsCommand,
+                signal
+              });
+              const stat = await fs.promises.stat(output);
+              return {
+                input: entry.absolutePath,
+                output,
+                status: "done",
+                originalSize: entry.size,
+                compressedSize: stat.size
+              };
+            } catch (error) {
+              if (isAbortError(error)) {
+                return {
+                  input: entry.absolutePath,
+                  output,
+                  status: "canceled",
+                  originalSize: entry.size,
+                  compressedSize: 0
+                };
+              }
+              return {
+                input: entry.absolutePath,
+                output,
+                status: "failed",
+                originalSize: entry.size,
+                compressedSize: 0,
+                error: error instanceof Error ? error.message : String(error)
+              };
+            }
+          },
+          {
+            onItemStart: index => {
+              this.events.onTaskProgress({
+                taskId,
+                done: Math.min(index, total),
+                total,
+                percent: Math.round((index / total) * 100),
+                currentFile: request.entries[index]?.absolutePath ?? ""
+              });
+            },
+            onItemEnd: (result, index) => {
+              this.events.onTaskItemDone({ taskId, index, result });
+            },
+            onProgress: done => {
+              this.events.onTaskProgress({
+                taskId,
+                done,
+                total,
+                percent: Math.round((done / total) * 100),
+                currentFile: ""
+              });
+            }
+          }
+        );
+      } finally {
+        this.running = null;
+      }
+
+      const summary = summarize(results, startedAt, request);
+      this.events.onTaskFinished({ taskId, summary, results });
+    })();
+
+    return { taskId };
+  }
+
+  cancel(taskId: string): void {
+    if (this.running && this.running.taskId === taskId) {
+      this.running.queue.cancel();
+    }
+  }
+
+  cancelAll(): void {
+    this.running?.queue.cancel();
+  }
+}
+
+function summarize(
+  results: TaskResult[],
+  startedAt: number,
+  request: TaskStartRequest
+): TaskSummary {
+  let success = 0;
+  let failed = 0;
+  let skipped = 0;
+  let canceled = 0;
+  let originalTotal = 0;
+  let compressedTotal = 0;
+  for (const result of results) {
+    if (result.status === "done") {
+      success += 1;
+      originalTotal += result.originalSize;
+      compressedTotal += result.compressedSize;
+    } else if (result.status === "failed") failed += 1;
+    else if (result.status === "skipped") skipped += 1;
+    else if (result.status === "canceled") canceled += 1;
+  }
+  const outputDir =
+    request.outputDir ??
+    (request.entries[0]
+      ? path.join(request.entries[0].rootDir, DEFAULT_OUTPUT_DIR_NAME)
+      : "");
+  return {
+    success,
+    failed,
+    skipped,
+    canceled,
+    originalTotal,
+    compressedTotal,
+    durationMs: Date.now() - startedAt,
+    outputDir
+  };
+}
