@@ -8,8 +8,10 @@
     "build": "pnpm --filter vips-thumbnail-desktop build",
     "package": "pnpm --filter vips-thumbnail-desktop package",
     "dist:win": "pnpm --filter vips-thumbnail-desktop dist:win",
+    "dist:mac:universal": "pnpm --filter vips-thumbnail-desktop dist:mac:universal",
     "typecheck": "pnpm --filter @giszhc/vips-thumbnail-core typecheck && pnpm --filter vips-thumbnail-desktop typecheck",
-    "test": "pnpm --filter @giszhc/vips-thumbnail-core test && pnpm --filter vips-thumbnail-desktop test"
+    "test": "pnpm --filter @giszhc/vips-thumbnail-core test && pnpm --filter vips-thumbnail-desktop test",
+    "postinstall": "node scripts/patch-electron-builder.mjs"
   },
   "engines": {
     "node": ">=18"

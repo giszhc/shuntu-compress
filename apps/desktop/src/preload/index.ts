@@ -19,6 +19,9 @@ function subscribe<T>(channel: string, cb: (payload: T) => void): () => void {
 }
 
 const api: AppApi = {
+  // 同步字段
+  platform: process.platform,
+
   openFiles: () => ipcRenderer.invoke(IPC.dialogOpenFiles),
   openDirectory: () => ipcRenderer.invoke(IPC.dialogOpenDirectory),
   pickOutputDirectory: () => ipcRenderer.invoke(IPC.dialogPickOutputDir),

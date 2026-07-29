@@ -96,6 +96,11 @@ select {
   -webkit-app-region: drag;
 }
 
+/* macOS：系统交通灯按钮渲染在窗口左上角（约 78px），给标题栏预留空间避开图标 */
+.titlebar--mac {
+  padding-left: 80px;
+}
+
 .titlebar-title {
   font-size: 13px;
   font-weight: 600;

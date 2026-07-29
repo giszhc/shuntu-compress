@@ -120,6 +120,8 @@ export interface WindowControlRequest {
 
 /** preload 暴露给渲染进程的完整 API 形状 */
 export interface AppApi {
+  /** 宿主平台（同步）；渲染层据此做平台相关 UI（如 macOS 隐藏自绘窗口控件） */
+  readonly platform: NodeJS.Platform;
   // 对话框
   openFiles(): Promise<string[]>;
   openDirectory(): Promise<string | null>;
