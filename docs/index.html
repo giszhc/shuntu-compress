@@ -158,7 +158,9 @@
     .footer-links a { color: var(--soft); }
     .footer-links a:hover { color: var(--brand); }
     .footer-bottom { margin-top: 28px; padding-top: 24px; border-top: 1px solid rgba(255, 255, 255, .55);
-      font-size: 13px; color: var(--mute); }
+      font-size: 13px; color: var(--mute); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+    .footer-mail { color: var(--brand); }
+    .footer-mail:hover { text-decoration: underline; }
 
     /* Reveal animation */
     .reveal { opacity: 0; transform: translateY(40px);
@@ -342,7 +344,10 @@
           <a href="#download">下载</a>
         </nav>
       </div>
-      <div class="footer-bottom">© 2026 giszhc · 保留所有权利</div>
+      <div class="footer-bottom">
+        <span>© 2026 giszhc · 保留所有权利</span>
+        <a class="footer-mail" href="mailto:giszhc@163.com">问题联系：giszhc@163.com</a>
+      </div>
     </div>
   </footer>
 
