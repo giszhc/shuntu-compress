@@ -69,20 +69,28 @@ function showMainWindow(): void {
 }
 
 function resolveTrayIconPath(): string {
-  // 打包后图标作为 extraResources 放在 resources 根目录；开发态直接用 build/icon.ico
-  return app.isPackaged
-    ? path.join(process.resourcesPath, "icon.ico")
-    : path.join(app.getAppPath(), "build", "icon.ico");
+  if (app.isPackaged) {
+    // 打包后：Windows 用 extraResources 的 icon.ico；macOS 用 app 自带的 icon.icns（在 resources 根目录）
+    if (process.platform === "darwin") {
+      return path.join(process.resourcesPath, "icon.icns");
+    }
+    return path.join(process.resourcesPath, "icon.ico");
+  }
+  // 开发态
+  if (process.platform === "darwin") {
+    return path.join(app.getAppPath(), "build", "icon.icns");
+  }
+  return path.join(app.getAppPath(), "build", "icon.ico");
 }
 
 function createTray(): void {
-  if (process.platform !== "win32" || tray) return;
+  if (tray) return;
+  // Windows 与 macOS 均显示托盘：macOS 下 Tray 自动出现在顶部菜单栏（status bar）
+  if (process.platform !== "win32" && process.platform !== "darwin") return;
   const image = nativeImage.createFromPath(resolveTrayIconPath());
   tray = new Tray(image);
   tray.setToolTip("瞬图压缩");
-  // 左键单击托盘：显示主窗口
-  tray.on("click", showMainWindow);
-  // 右键：上下文菜单（显示窗口 / 退出）
+  // 上下文菜单（显示窗口 / 退出），与 Windows 托盘完全一致
   tray.setContextMenu(
     Menu.buildFromTemplate([
       { label: "显示窗口", click: showMainWindow },
@@ -96,6 +104,10 @@ function createTray(): void {
       }
     ])
   );
+  // Windows：左键单击直接显示主窗口；macOS：左键弹出上方菜单（行为同 Windows 托盘）
+  if (process.platform === "win32") {
+    tray.on("click", showMainWindow);
+  }
 }
 
 function createWindow(): void {
@@ -162,6 +174,9 @@ app.on("second-instance", () => {
 });
 
 app.whenReady().then(() => {
+  const trayEnabled = !app.commandLine.hasSwitch("no-tray");
+  // macOS：以菜单栏（status bar）应用方式运行，隐藏 Dock 图标，行为与 Windows 托盘一致
+  if (process.platform === "darwin" && trayEnabled) app.dock?.hide();
   registerIpc({
     vips: vipsService,
     process: processService,
@@ -170,10 +185,10 @@ app.whenReady().then(() => {
     settings: settingsService
   });
   createWindow();
-  if (!app.commandLine.hasSwitch("no-tray")) createTray();
+  if (trayEnabled) createTray();
 
   app.on("activate", () => {
-    // macOS：点击 Dock 图标时恢复窗口
+    // macOS：点击 Dock 图标时恢复窗口（未隐藏 Dock 时生效）
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
     else showMainWindow();
   });

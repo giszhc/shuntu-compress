@@ -109,6 +109,8 @@ function renderPng(size, targetPath) {
 /**
  * 生成 ICNS：容器格式为 "icns" + 总长度 + 若干 (OSType + 长度 + PNG 数据) 条目。
  * 现代 macOS 支持 PNG 载荷的条目类型。
+ * 注意：此手工拼接方案在 Launchpad/Dock 上渲染不完整（只显示局部），
+ * 仅作为非 macOS 平台的兜底；macOS 上必须使用系统 iconutil。
  */
 function buildIcns(entries) {
   const chunks = entries.map(({ type, data }) => {
@@ -122,6 +124,48 @@ function buildIcns(entries) {
   fileHeader.write("icns", 0, "ascii");
   fileHeader.writeUInt32BE(8 + body.length, 4);
   return Buffer.concat([fileHeader, body]);
+}
+
+/**
+ * macOS 专用：用系统 sips + iconutil 从 1024px 主图生成标准 ICNS。
+ * 这是 Apple 官方工具链，保证 Launchpad / Dock / Finder 全部正确显示。
+ */
+function buildIcnsWithIconutil(sourcePng, targetIcns) {
+  const iconsetDir = join(outDir, "icon.iconset");
+  rmSync(iconsetDir, { recursive: true, force: true });
+  mkdirSync(iconsetDir, { recursive: true });
+
+  const variants = [
+    { name: "icon_16x16.png", size: 16 },
+    { name: "icon_16x16@2x.png", size: 32 },
+    { name: "icon_32x32.png", size: 32 },
+    { name: "icon_32x32@2x.png", size: 64 },
+    { name: "icon_128x128.png", size: 128 },
+    { name: "icon_128x128@2x.png", size: 256 },
+    { name: "icon_256x256.png", size: 256 },
+    { name: "icon_256x256@2x.png", size: 512 },
+    { name: "icon_512x512.png", size: 512 },
+    { name: "icon_512x512@2x.png", size: 1024 }
+  ];
+
+  for (const { name, size } of variants) {
+    const result = spawnSync(
+      "sips",
+      ["-z", String(size), String(size), sourcePng, "--out", join(iconsetDir, name)],
+      { stdio: "ignore" }
+    );
+    if (result.status !== 0) {
+      throw new Error(`sips 缩放失败（${size}px），退出码：${result.status ?? "未知"}`);
+    }
+  }
+
+  const result = spawnSync("iconutil", ["-c", "icns", iconsetDir, "-o", targetIcns], {
+    stdio: "inherit"
+  });
+  if (result.status !== 0) {
+    throw new Error(`iconutil 生成 ICNS 失败，退出码：${result.status ?? "未知"}`);
+  }
+  rmSync(iconsetDir, { recursive: true, force: true });
 }
 
 // 1) 渲染各尺寸 PNG（1024 为主图标，其余用于 ICNS）
@@ -156,8 +200,12 @@ const rendererAssetsDir = join(currentDir, "..", "src", "renderer", "src", "asse
 mkdirSync(rendererAssetsDir, { recursive: true });
 renderPng(64, join(rendererAssetsDir, "app-icon.png"));
 
-// 3) ICNS（macOS）
-writeFileSync(icnsPath, buildIcns(icnsEntries));
+// 3) ICNS（macOS）：优先使用 Apple 官方 iconutil，仅在非 macOS 上回退到手工拼接
+if (process.platform === "darwin") {
+  buildIcnsWithIconutil(pngPath, icnsPath);
+} else {
+  writeFileSync(icnsPath, buildIcns(icnsEntries));
+}
 
 console.log(`图标源文件：${svgPath}`);
 console.log(`已生成 PNG：${pngPath}`);

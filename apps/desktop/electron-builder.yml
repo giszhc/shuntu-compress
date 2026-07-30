@@ -2,6 +2,9 @@ appId: com.giszhc.vips-thumbnail-desktop
 productName: 瞬图压缩
 copyright: Copyright © 2026 giszhc
 
+electronDownload:
+  mirror: https://npmmirror.com/mirrors/electron/
+
 directories:
   output: release
   buildResources: build
