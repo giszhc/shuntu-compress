@@ -255,8 +255,8 @@
             <svg viewBox="0 0 384 512" fill="currentColor"><path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4.2 202.4 4.2 285c0 26.3 4.8 53.3 14.4 81.2 12.8 38.3 59 126.3 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.5-142.3c27.2-32.6 22.4-61.4 21.8-64.6-25.4-1.2-53.8 16.2-71.4 36.4-16.7 19.2-27.7 43.6-24.8 69.5 27.3 2 55.3-13.3 74.4-41.3z"/></svg>
           </div>
             <div class="os-name">macOS 安装包</div>
-            <div class="os-desc">支持 Apple 与 Intel 芯片</div>
-            <a class="btn btn-primary" href="shuntu-desktop.dmg">
+            <div class="os-desc">支持 Apple 芯片（M 系列）</div>
+            <a class="btn btn-primary" href="https://github.com/giszhc/shuntu-compress/releases/latest/download/shuntu-desktop.dmg">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 12 5 5 5-5"/><path d="M5 21h14"/></svg>
               下载 macOS 版
             </a>
@@ -372,7 +372,7 @@
 
       if (isMac) {
         pill.textContent = 'macOS'; heroOs.textContent = 'macOS 版';
-        heroLink.href = 'shuntu-desktop.dmg'; cardMac.classList.add('recommend');
+        heroLink.href = 'https://github.com/giszhc/shuntu-compress/releases/latest/download/shuntu-desktop.dmg'; cardMac.classList.add('recommend');
       } else if (isWin) {
         pill.textContent = 'Windows'; heroOs.textContent = 'Windows 版';
         heroLink.href = 'shuntu-desktop.exe'; cardWin.classList.add('recommend');
