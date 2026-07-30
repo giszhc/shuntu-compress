@@ -30,6 +30,16 @@ if (!isSingleInstance) {
   app.quit();
 }
 
+// 与渲染层 --titlebar-height 保持一致（styles/variables.css）
+const TITLEBAR_HEIGHT = 44;
+// macOS 交通灯按钮组的外框高度为 16px（12px 按钮 + 上下留白）
+const TRAFFIC_LIGHT_BOX = 16;
+// 垂直居中：(标题栏高度 - 按钮组高度) / 2；x 保持系统默认 7px
+const TRAFFIC_LIGHT_POSITION = {
+  x: 7,
+  y: Math.round((TITLEBAR_HEIGHT - TRAFFIC_LIGHT_BOX) / 2)
+};
+
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
 // Windows 下点击关闭按钮仅隐藏到托盘；只有托盘"退出"或系统退出时才真正关闭
@@ -123,6 +133,10 @@ function createWindow(): void {
     show: false,
     frame: false,
     titleBarStyle: "hidden",
+    // macOS：让系统交通灯按钮与 44px 标题栏垂直居中对齐
+    ...(process.platform === "darwin"
+      ? { trafficLightPosition: TRAFFIC_LIGHT_POSITION }
+      : {}),
     backgroundColor: resolveThemeBackground(settings),
     webPreferences: {
       preload: path.join(__dirname, "../preload/index.js"),
@@ -134,6 +148,13 @@ function createWindow(): void {
   });
 
   mainWindow.once("ready-to-show", () => mainWindow?.show());
+
+  // macOS：退出全屏后系统会把交通灯位置重置为默认值，需要重新应用居中位置
+  if (process.platform === "darwin") {
+    mainWindow.on("leave-full-screen", () => {
+      mainWindow?.setWindowButtonPosition(TRAFFIC_LIGHT_POSITION);
+    });
+  }
 
   mainWindow.on("maximize", () => sendToAll(IPC_EVENTS.maximizeChange, true));
   mainWindow.on("unmaximize", () => sendToAll(IPC_EVENTS.maximizeChange, false));
