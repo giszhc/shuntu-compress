@@ -16,6 +16,11 @@ files:
 
 asar: true
 
+# 仅保留中英文语言包，移除其余 50+ 种语言的 .pak（减小安装包体积）
+electronLanguages:
+  - zh-CN
+  - en-US
+
 win:
   target:
     - target: nsis
@@ -46,6 +51,8 @@ mac:
 
 dmg:
   title: "瞬图压缩 ${version}"
+  # UDBZ = bzip2 压缩，比默认 UDZO(zlib) 体积更小
+  format: UDBZ
   contents:
     - x: 130
       y: 220
