@@ -9,3 +9,5 @@ allowBuilds:
 onlyBuiltDependencies:
   - esbuild
   - electron
+overrides:
+  "@electron/get": "5.1.0"
