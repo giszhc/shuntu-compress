@@ -151,14 +151,14 @@
     .step p { color: var(--soft); font-size: 15px; }
 
     /* Footer */
-    footer { padding: 40px 24px 56px; }
-    .footer-inner { width: 100%; border-radius: var(--radius);
-      padding: 30px 40px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;
-      background: var(--glass); backdrop-filter: blur(20px); border: 1px solid var(--border); box-shadow: var(--shadow); }
-    .footer-inner a { color: var(--soft); }
-    .footer-inner a:hover { color: var(--brand); }
-    .footer-meta { font-size: 13px; color: var(--mute); }
-    .footer-links { display: flex; gap: 22px; font-size: 14px; }
+    footer { padding: 72px 24px 56px; border-top: 1px solid var(--border); }
+    .footer-inner { max-width: 1320px; margin: 0 auto; }
+    .footer-top { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 18px; }
+    .footer-links { display: flex; gap: 28px; font-size: 14px; }
+    .footer-links a { color: var(--soft); }
+    .footer-links a:hover { color: var(--brand); }
+    .footer-bottom { margin-top: 28px; padding-top: 24px; border-top: 1px solid rgba(255, 255, 255, .55);
+      font-size: 13px; color: var(--mute); }
 
     /* Reveal animation */
     .reveal { opacity: 0; transform: translateY(40px);
@@ -332,17 +332,17 @@
   <!-- Footer -->
   <footer>
     <div class="footer-inner reveal">
-      <div>
-        <div class="logo" style="margin-bottom:6px">
+      <div class="footer-top">
+        <a class="logo" href="#top">
           <span class="mark"><img src="icon.svg" alt="瞬图压缩" /></span>
           瞬图压缩
-        </div>
-        <div class="footer-meta">© 2026 giszhc</div>
+        </a>
+        <nav class="footer-links">
+          <a href="#features">功能介绍</a>
+          <a href="#download">下载</a>
+        </nav>
       </div>
-      <div class="footer-links">
-        <a href="#features">功能介绍</a>
-        <a href="#download">下载</a>
-      </div>
+      <div class="footer-bottom">© 2026 giszhc · 保留所有权利</div>
     </div>
   </footer>
 
