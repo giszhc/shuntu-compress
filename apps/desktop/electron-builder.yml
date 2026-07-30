@@ -37,6 +37,12 @@ mac:
   category: public.app-category.photography
   darkModeSupport: true
   artifactName: "vips-thumbnail-desktop-${version}-${arch}.dmg"
+  # 托盘图标（菜单栏 Status Item）：运行时从 resources 根目录读取
+  extraResources:
+    - from: build/tray-icon.png
+      to: tray-icon.png
+    - from: build/tray-icon@2x.png
+      to: tray-icon@2x.png
 
 dmg:
   title: "瞬图压缩 ${version}"

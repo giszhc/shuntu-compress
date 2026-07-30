@@ -1,6 +1,7 @@
 /**
  * 主进程入口：单实例、窗口创建、安全配置、服务装配。
  */
+import { existsSync } from "node:fs";
 import path from "node:path";
 import { BrowserWindow, Menu, Tray, app, nativeImage, nativeTheme, shell } from "electron";
 import { IPC_EVENTS, type Settings } from "../shared/ipc-types";
@@ -69,16 +70,17 @@ function showMainWindow(): void {
 }
 
 function resolveTrayIconPath(): string {
-  if (app.isPackaged) {
-    // 打包后：Windows 用 extraResources 的 icon.ico；macOS 用 app 自带的 icon.icns（在 resources 根目录）
-    if (process.platform === "darwin") {
-      return path.join(process.resourcesPath, "icon.icns");
-    }
-    return path.join(process.resourcesPath, "icon.ico");
-  }
-  // 开发态
+  // macOS 菜单栏（Status Item / Tray）需要小尺寸 PNG，不能用 ICNS
+  // Electron nativeImage.createFromPath 对 ICNS 支持有限，且菜单栏图标应 ≤ 22px
   if (process.platform === "darwin") {
-    return path.join(app.getAppPath(), "build", "icon.icns");
+    const base = app.isPackaged ? process.resourcesPath : path.join(app.getAppPath(), "build");
+    // 优先 @2x (Retina)，回退到 1x
+    const ret = path.join(base, "tray-icon@2x.png");
+    if (existsSync(ret)) return ret;
+    return path.join(base, "tray-icon.png");
+  }
+  if (app.isPackaged) {
+    return path.join(process.resourcesPath, "icon.ico");
   }
   return path.join(app.getAppPath(), "build", "icon.ico");
 }
