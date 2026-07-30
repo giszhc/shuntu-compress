@@ -3,6 +3,8 @@
 跨平台图片压缩桌面应用。拖入图片或文件夹，一键批量压缩，输出永不覆盖原图。
 
 > 简称「瞬图」。本仓库为桌面端（Electron）独立仓库，与 npm 命令行工具 `@giszhc/vips-thumbnail` 分离维护。
+>
+> 官网与下载：https://giszhc.github.io/shuntu-compress/（GitHub Pages，源仓库 `shuntu-compress`）
 
 ## 特性
 
@@ -19,7 +21,9 @@
 ```
 shuntu-desktop/
 ├── apps/desktop/     # 桌面端（Electron + React 19 + TypeScript）
-└── packages/core/    # 图片处理核心模块（扫描 / 压缩 / 引擎安装）
+├── packages/core/    # 图片处理核心模块（扫描 / 压缩 / 引擎安装）
+├── docs/             # 静态落地页（GitHub Pages 官网 / 安装包下载）
+└── scripts/          # 构建与发布辅助脚本
 ```
 
 ## 快速开始
@@ -39,12 +43,23 @@ pnpm dev              # 开发模式（热更新）
 | `pnpm typecheck` | 类型检查（core + desktop） |
 | `pnpm test` | 单元测试（core + desktop） |
 | `pnpm dist:win` | 打包 Windows 安装包（NSIS，输出至 `apps/desktop/release/`） |
+| `pnpm dist:mac:universal` | 打包 macOS 通用安装包（DMG，输出至 `apps/desktop/release/`） |
+| `pnpm release:docs` | 打包后将安装包拷贝进 `docs/`，用于官网发布 |
 
 ## 压缩引擎
 
 - 首次执行压缩时，应用会自动下载并安装压缩引擎到 `%LOCALAPPDATA%\vips-thumbnail\`（Windows）。
 - 在「设置 → 下载缓存」中可清除已下载的引擎安装包缓存。
 - 输出文件永不覆盖原图。
+
+## 官网与安装包发布
+
+- 仓库 `docs/` 目录是一个静态落地页，介绍产品功能并支持 Windows / macOS 安装包下载，通过 GitHub Pages 自动发布。
+- 在线地址：https://giszhc.github.io/shuntu-compress/
+- 发布流程：
+  1. `pnpm dist:win`（Windows）/ `pnpm dist:mac:universal`（macOS）完成打包；
+  2. `pnpm release:docs` 将安装包拷贝进 `docs/`（命名为 `shuntu-desktop.exe` / `shuntu-desktop.dmg`）；
+  3. 提交并推送 `main`，GitHub Actions 自动部署到 Pages。
 
 ## License
 
