@@ -134,6 +134,14 @@
     .dl-card .os-name { font-size: 23px; font-weight: 700; }
     .dl-card .os-desc { color: var(--soft); font-size: 14px; margin: 6px 0 24px; }
     .dl-card .meta { font-size: 13px; color: var(--mute); margin-top: 14px; }
+    /* macOS Gatekeeper 绕过提示 */
+    .dl-note { margin-top: 16px; padding: 13px 15px; border-radius: 14px; text-align: left;
+      background: rgba(99,102,241,.08); border: 1px solid rgba(99,102,241,.22);
+      color: var(--soft); font-size: 13px; line-height: 1.7; }
+    .dl-note strong { color: var(--text); font-weight: 600; }
+    .dl-note code { display: block; margin: 7px 0 4px; padding: 8px 10px; border-radius: 8px;
+      background: rgba(15,23,42,.06); font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 12px; color: #1e293b; word-break: break-all; }
     .dl-card .btn { width: 100%; justify-content: center; }
 
     /* Features grid */
@@ -261,6 +269,12 @@
               下载 macOS 版
             </a>
             <div class="meta">拖入「应用程序」即可完成安装</div>
+            <div class="dl-note">
+              <strong>安装后若提示「已损坏，无法打开」？</strong>
+              这是 macOS 对未公证应用的安全拦截，并非文件损坏。在「终端」执行下面一行即可解除：
+              <code>xattr -cr /Applications/瞬图压缩.app</code>
+              或在「系统设置 → 隐私与安全性」中点击「仍要打开」。
+            </div>
           </div>
         </div>
       </div>
