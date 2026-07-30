@@ -44,6 +44,11 @@ if (!src.includes(anchor)) {
   process.exit(1);
 }
 
+// Replace existing usages BEFORE injecting the fallback line, so the injected line's own
+// `get_1.ElectronDownloadCacheMode` reference is preserved. A late global replace would otherwise
+// rewrite it to `CacheMode`, making the const reference itself and crash with a TDZ error.
+src = src.split("get_1.ElectronDownloadCacheMode").join("CacheMode");
+
 const injected =
   anchor +
   "\n" +
@@ -53,7 +58,6 @@ const injected =
   "const CacheMode = (get_1 && get_1.ElectronDownloadCacheMode) || { ReadWrite: 0, ReadOnly: 1, WriteOnly: 2, Bypass: 3 };";
 
 src = src.replace(anchor, injected);
-src = src.split("get_1.ElectronDownloadCacheMode").join("CacheMode");
 
 writeFileSync(target, src, "utf8");
 console.log("[patch] Applied ElectronDownloadCacheMode fallback patch to app-builder-lib.");
