@@ -55,9 +55,8 @@ export function VipsInstallModal(): React.JSX.Element | null {
               <Download size={16} /> 需要安装压缩引擎
             </h2>
             <p>
-              首次使用需要下载压缩引擎组件（约 40 MB）。
-              将下载并安装到当前用户目录，不需要管理员权限，
-              下载完成后会自动校验文件完整性。
+              首次使用需要安装图像压缩引擎（libvips）。安装过程在本机完成，
+              不会上传任何文件；安装结束后即可开始压缩，可随时在设置中清除缓存。
             </p>
             <div className="modal-actions">
               <button type="button" className="btn btn-secondary" onClick={closeVipsModal}>

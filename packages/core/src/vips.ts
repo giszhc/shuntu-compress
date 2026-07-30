@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { spawnSync } from "node:child_process";
 import { VIPS_VERSION, WINDOWS_VIPS_DIRECTORY } from "./constants.js";
 import { VipsError } from "./errors.js";
 import { canRunVipsSync } from "./spawn.js";
@@ -58,13 +59,55 @@ export class VipsDetector {
     return fs.existsSync(executable) && canRunVipsSync(executable);
   }
 
+  /** macOS 上 Homebrew 的候选安装路径（Apple Silicon / Intel） */
+  private static readonly HOMEBREW_CANDIDATES = [
+    "/opt/homebrew/bin/brew",
+    "/usr/local/bin/brew"
+  ];
+
+  /** 查找 Homebrew 可执行文件；非 macOS 或无 brew 时返回 null */
+  findBrew(): string | null {
+    if (process.platform !== "darwin") return null;
+    for (const candidate of VipsDetector.HOMEBREW_CANDIDATES) {
+      if (fs.existsSync(candidate)) return candidate;
+    }
+    return null;
+  }
+
+  /** 是否具备 macOS 自动安装前置条件（已安装 Homebrew） */
+  hasHomebrew(): boolean {
+    return this.findBrew() !== null;
+  }
+
+  /** 解析 Homebrew 安装的 vips 绝对路径；未安装时返回 null */
+  getHomebrewVipsPath(): string | null {
+    const brew = this.findBrew();
+    if (!brew) return null;
+    try {
+      const res = spawnSync(brew, ["--prefix"], {
+        stdio: ["ignore", "pipe", "ignore"]
+      });
+      if (res.error || res.status !== 0) return null;
+      const prefix = (res.stdout?.toString() ?? "").trim();
+      if (!prefix) return null;
+      const vips = path.join(prefix, "bin", "vips");
+      return fs.existsSync(vips) ? vips : null;
+    } catch {
+      return null;
+    }
+  }
+
   /**
    * 解析可用的 vips 命令（不触发安装）：
-   * 1) 系统 PATH；2) Windows 缓存。都不可用返回 null。
+   * 1) 系统 PATH；2) macOS 经 Homebrew 安装；3) Windows 缓存。都不可用返回 null。
    */
   detect(): string | null {
     const system = this.detectSystem();
     if (system) return system;
+    if (process.platform === "darwin") {
+      const brewVips = this.getHomebrewVipsPath();
+      if (brewVips) return brewVips;
+    }
     if (process.platform === "win32") {
       const { executable } = this.getWindowsPaths();
       if (fs.existsSync(executable) && canRunVipsSync(executable)) {
@@ -76,15 +119,15 @@ export class VipsDetector {
 
   /**
    * 解析 vips 命令；检测不到时：
-   * - 非 Windows 抛 VipsError（含 brew/apt 指引，与 CLI 文案一致）
-   * - Windows 返回 null（由调用方触发安装流程）
+   * - Linux 抛 VipsError（含 apt 指引，与 CLI 文案一致）
+   * - Windows / macOS 返回 null（由调用方触发安装流程）
    */
   resolveOrNull(): string | null {
     const found = this.detect();
     if (found) return found;
-    if (process.platform !== "win32") {
-      throw new VipsError(MISSING_VIPS_MESSAGE);
+    if (process.platform !== "linux") {
+      return null;
     }
-    return null;
+    throw new VipsError(MISSING_VIPS_MESSAGE);
   }
 }

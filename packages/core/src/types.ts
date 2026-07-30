@@ -7,7 +7,11 @@ export type OutputExt = ".jpg" | ".jpeg" | ".png";
 export type OutputMode = "flat" | "preserve";
 
 export interface ProcessOptions {
-  /** 1-100，仅对 JPG 输出有效 */
+  /**
+   * 1-100，对 JPG / PNG 输出均有效：
+   * - JPG 为有损压缩，值越低体积越小；
+   * - PNG 为无损格式，仅当值 < 100 时启用调色板量化（对截图/图标/插画最有效）。
+   */
   quality: number;
   /** 最长边尺寸；null 表示保持原尺寸 */
   size: number | null;

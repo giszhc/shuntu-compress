@@ -12,6 +12,7 @@ import { buildVipsEnv, spawnAsync } from "./spawn.js";
 import { nodeDownload, type Downloader } from "./download.js";
 import { extractZip } from "./unzip.js";
 import { VipsDetector } from "./vips.js";
+import { canRunVipsSync } from "./spawn.js";
 import type { InstallProgress } from "./types.js";
 
 export type Unzipper = (
@@ -31,6 +32,13 @@ export interface InstallWindowsVipsOptions {
   unzipper?: Unzipper;
   /** 测试注入：跳过架构检查 */
   skipArchCheck?: boolean;
+}
+
+export interface InstallMacOSVipsOptions {
+  onProgress?: (progress: InstallProgress) => void;
+  signal?: AbortSignal;
+  /** 测试注入：指定 brew 可执行文件，默认自动探测 */
+  brew?: string;
 }
 
 /** 流式计算文件 SHA-256（不整块读入内存） */
@@ -187,4 +195,59 @@ export async function installWindowsVips(
     throw new InstallError(`压缩引擎已解压但无法运行：${executable}`, "finalize");
   }
   return executable;
+}
+
+/**
+ * macOS 自动安装 libvips（经由 Homebrew）：
+ * 1) 定位 brew；2) `brew --prefix` 取安装前缀；3) 已安装则直接复用；
+ * 4) 否则 `brew install vips`；5) 校验 vips --version 可运行，返回 vips 绝对路径。
+ * 与 Windows 分支不同，这里不下载独立 zip，而是复用系统包管理器。
+ */
+export async function installMacOSVips(
+  options: InstallMacOSVipsOptions = {}
+): Promise<string> {
+  const { onProgress, signal } = options;
+  throwIfAborted(signal);
+
+  const detector = new VipsDetector();
+  const brew = options.brew ?? detector.findBrew();
+  if (!brew || !fs.existsSync(brew)) {
+    throw new InstallError(
+      "未检测到 Homebrew，无法自动安装压缩引擎。请先安装 Homebrew（https://brew.sh），" +
+        "或手动执行 `brew install vips`。",
+      "precheck"
+    );
+  }
+
+  // 解析 Homebrew 安装前缀
+  const prefixRes = await spawnAsync(brew, ["--prefix"], { signal });
+  if (prefixRes.status !== 0) {
+    throw new InstallError("无法获取 Homebrew 安装路径", "precheck");
+  }
+  const prefix = prefixRes.stdout.trim();
+  const vipsPath = path.join(prefix, "bin", "vips");
+
+  // 已安装且可运行 → 直接复用，不重复安装
+  if (fs.existsSync(vipsPath) && canRunVipsSync(vipsPath)) {
+    return vipsPath;
+  }
+
+  throwIfAborted(signal);
+  onProgress?.({ phase: "download", received: 0, total: 0, percent: 0 });
+  const result = await spawnAsync(brew, ["install", "vips"], {
+    env: buildVipsEnv(brew),
+    signal
+  });
+  if (result.status !== 0) {
+    const detail = (result.stderr || result.stdout).trim() || "未知错误";
+    throw new InstallError(`Homebrew 安装 libvips 失败：${detail}`, "finalize");
+  }
+
+  // 安装后校验可运行
+  throwIfAborted(signal);
+  onProgress?.({ phase: "finalize", received: 0, total: 0, percent: 100 });
+  if (!fs.existsSync(vipsPath) || !canRunVipsSync(vipsPath)) {
+    throw new InstallError(`压缩引擎安装后无法运行：${vipsPath}`, "finalize");
+  }
+  return vipsPath;
 }

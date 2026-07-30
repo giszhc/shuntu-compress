@@ -3,17 +3,36 @@ import { VipsError } from "../errors.js";
 import { buildVipsSteps } from "../process.js";
 
 describe("buildVipsSteps", () => {
-  it("PNG 不缩放返回 null（直接复制）", () => {
+  it("原尺寸 + 同格式 + 最高质量：返回 null（直接复制原图）", () => {
     expect(
       buildVipsSteps("a.png", "out.png", "out.png.v", {
-        quality: 85,
+        quality: 100,
+        size: null,
+        ext: null
+      })
+    ).toBeNull();
+    expect(
+      buildVipsSteps("a.jpg", "out.jpg", "out.jpg.v", {
+        quality: 100,
         size: null,
         ext: null
       })
     ).toBeNull();
   });
 
-  it("JPG 不缩放：resize 1 + jpegsave", () => {
+  it("PNG 不缩放 + 质量<100：resize 1 + pngsave --palette --Q", () => {
+    const steps = buildVipsSteps("a.png", "out.png", "tmp", {
+      quality: 85,
+      size: null,
+      ext: null
+    });
+    expect(steps).toEqual([
+      { args: ["resize", "a.png", "tmp", "1"] },
+      { args: ["pngsave", "tmp", "out.png", "--palette", "--Q=85"] }
+    ]);
+  });
+
+  it("JPG 不缩放 + 质量<100：resize 1 + jpegsave（含 --optimize-coding）", () => {
     const steps = buildVipsSteps("a.jpg", "out.jpg", "tmp", {
       quality: 80,
       size: null,
@@ -21,7 +40,16 @@ describe("buildVipsSteps", () => {
     });
     expect(steps).toEqual([
       { args: ["resize", "a.jpg", "tmp", "1"] },
-      { args: ["jpegsave", "tmp", "out.jpg", "--Q=80", "--strip"] }
+      {
+        args: [
+          "jpegsave",
+          "tmp",
+          "out.jpg",
+          "--Q=80",
+          "--strip",
+          "--optimize-coding"
+        ]
+      }
     ]);
   });
 
@@ -33,11 +61,20 @@ describe("buildVipsSteps", () => {
     });
     expect(steps).toEqual([
       { args: ["thumbnail", "a.jpg", "tmp", "400"] },
-      { args: ["jpegsave", "tmp", "out.jpg", "--Q=75", "--strip"] }
+      {
+        args: [
+          "jpegsave",
+          "tmp",
+          "out.jpg",
+          "--Q=75",
+          "--strip",
+          "--optimize-coding"
+        ]
+      }
     ]);
   });
 
-  it("PNG 缩放：thumbnail + pngsave", () => {
+  it("PNG 缩放：thumbnail + pngsave（质量<100 启用调色板）", () => {
     const steps = buildVipsSteps("a.png", "out.png", "tmp", {
       quality: 85,
       size: 300,
@@ -45,7 +82,7 @@ describe("buildVipsSteps", () => {
     });
     expect(steps).toEqual([
       { args: ["thumbnail", "a.png", "tmp", "300"] },
-      { args: ["pngsave", "tmp", "out.png", "--compression=9"] }
+      { args: ["pngsave", "tmp", "out.png", "--palette", "--Q=85"] }
     ]);
   });
 

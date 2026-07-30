@@ -15,7 +15,7 @@ interface VipsStep {
   args: string[];
 }
 
-/** 生成处理步骤（纯函数，便于测试）；返回 null 表示直接复制（PNG 不缩放场景） */
+/** 生成处理步骤（纯函数，便于测试）；返回 null 表示直接复制（无损且不缩放场景） */
 export function buildVipsSteps(
   input: string,
   output: string,
@@ -23,9 +23,12 @@ export function buildVipsSteps(
   options: ProcessOptions
 ): VipsStep[] | null {
   const outExt = path.extname(output).toLowerCase();
+  const inputExt = path.extname(input).toLowerCase();
+  const sameFormat = inputExt === outExt;
 
-  // PNG 不缩放时直接复制，避免重新编码后体积变大（与 CLI 行为一致）
-  if (!options.size && outExt === ".png") {
+  // 原尺寸 + 保持原格式 + 最高质量：直接复制原图。
+  // 不缩放且质量为 100 时重新编码既无法变小，又会引入代际损失，故跳过编码。
+  if (!options.size && sameFormat && options.quality >= 100) {
     return null;
   }
 
@@ -37,15 +40,59 @@ export function buildVipsSteps(
   }
 
   if (outExt === ".jpg" || outExt === ".jpeg") {
+    // --optimize-coding 计算最优 Huffman 表，在不损失画质的前提下进一步减小体积
     steps.push({
-      args: ["jpegsave", temporary, output, `--Q=${options.quality}`, "--strip"]
+      args: [
+        "jpegsave",
+        temporary,
+        output,
+        `--Q=${options.quality}`,
+        "--strip",
+        "--optimize-coding"
+      ]
     });
   } else if (outExt === ".png") {
-    steps.push({ args: ["pngsave", temporary, output, "--compression=9"] });
+    // PNG 是无损格式：quality < 100 时启用调色板量化（palette），对色彩较少的
+    // 图像（截图 / 图标 / 插画）有效；照片类图像量化后体积基本不变甚至变差，
+    // 由 processImage 的“重新编码后未变小则保留原图”兜底，避免画质劣化却无收益。
+    const pngArgs = ["pngsave", temporary, output];
+    if (options.quality < 100) {
+      pngArgs.push("--palette", `--Q=${options.quality}`);
+    } else {
+      pngArgs.push("--Q=100");
+    }
+    steps.push({ args: pngArgs });
   } else {
     throw new VipsError(`不支持的输出格式：${outExt}`);
   }
   return steps;
+}
+
+/**
+ * 原尺寸且保持原格式时，若重新编码后体积未变小，则保留原图。
+ * 这能避免两类问题：
+ *  - JPG 原尺寸重编码后体积反而大于原图（不同编码器/Huffman 表导致）；
+ *  - PNG 照片类图像启用调色板后画质劣化但体积未减。
+ * 仅在“未缩放 + 同格式”时生效；缩放或格式转换属于主动操作，不做回退。
+ */
+function shouldKeepOriginal(
+  input: string,
+  output: string,
+  options: ProcessOptions
+): boolean {
+  if (options.size !== null) return false;
+  const inputExt = path.extname(input).toLowerCase();
+  const outputExt = path.extname(output).toLowerCase();
+  if (inputExt !== outputExt) return false;
+  let inSize: number;
+  let outSize: number;
+  try {
+    inSize = fs.statSync(input).size;
+    outSize = fs.statSync(output).size;
+  } catch {
+    return false;
+  }
+  return outSize >= inSize;
 }
 
 function makeTemporaryPath(output: string): string {
@@ -93,6 +140,11 @@ export async function processImage(
   } finally {
     fs.rmSync(temporary, { force: true });
   }
+
+  // 原尺寸 + 同格式：重新编码后未变小则保留原图，避免体积膨胀或画质劣化
+  if (shouldKeepOriginal(input, output, options)) {
+    await fs.promises.copyFile(input, output);
+  }
 }
 
 /** 同步处理单张图片（CLI 使用），行为与现有 CLI 完全一致 */
@@ -116,5 +168,10 @@ export function processImageSync(
     }
   } finally {
     fs.rmSync(temporary, { force: true });
+  }
+
+  // 原尺寸 + 同格式：重新编码后未变小则保留原图，避免体积膨胀或画质劣化
+  if (shouldKeepOriginal(input, output, options)) {
+    fs.copyFileSync(input, output);
   }
 }

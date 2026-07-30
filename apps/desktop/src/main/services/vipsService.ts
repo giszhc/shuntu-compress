@@ -9,6 +9,7 @@ import {
   MISSING_VIPS_MESSAGE,
   VipsDetector,
   installWindowsVips,
+  installMacOSVips,
   spawnAsync,
   buildVipsEnv,
   isAbortError
@@ -40,14 +41,20 @@ export class VipsService {
   }
 
   async detect(): Promise<VipsStatus> {
-    const canAutoInstall = process.platform === "win32" && process.arch === "x64";
+    const canAutoInstall =
+      (process.platform === "win32" && process.arch === "x64") ||
+      (process.platform === "darwin" && this.detector.hasHomebrew());
     const found = this.detector.detect();
     if (!found) {
       this.resolvedCommand = null;
       return {
         available: false,
         canAutoInstall,
-        guide: canAutoInstall ? undefined : MISSING_VIPS_MESSAGE
+        guide: canAutoInstall
+          ? undefined
+          : process.platform === "darwin"
+            ? "未检测到 Homebrew，请先安装 Homebrew 后重试，或手动执行 `brew install vips`。"
+            : MISSING_VIPS_MESSAGE
       };
     }
     this.resolvedCommand = found;
@@ -66,11 +73,19 @@ export class VipsService {
     }
     this.installController = new AbortController();
     try {
-      const executable = await installWindowsVips({
-        cacheRoot: this.detector.cacheRoot,
-        signal: this.installController.signal,
-        onProgress: progress => this.events.onInstallProgress(progress)
-      });
+      let executable: string;
+      if (process.platform === "darwin") {
+        executable = await installMacOSVips({
+          signal: this.installController.signal,
+          onProgress: progress => this.events.onInstallProgress(progress)
+        });
+      } else {
+        executable = await installWindowsVips({
+          cacheRoot: this.detector.cacheRoot,
+          signal: this.installController.signal,
+          onProgress: progress => this.events.onInstallProgress(progress)
+        });
+      }
       this.resolvedCommand = executable;
       this.version = await this.queryVersion(executable);
       return { executable };

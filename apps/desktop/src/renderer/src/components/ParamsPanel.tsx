@@ -49,18 +49,17 @@ export function ParamsPanel(): React.JSX.Element {
     }
   };
 
-  const jpgOnlyHint =
-    params.ext === ".png" ? "（PNG 输出不使用质量参数）" : "";
+  const qualityHint =
+    params.ext === ".png"
+      ? "PNG 为无损格式：低于 100 时启用调色板量化，对截图 / 图标 / 插画最明显；照片类基本不减小。"
+      : "JPG 为有损压缩，值越低体积越小。";
 
   return (
     <aside className="params-panel">
       <div className="params-section">
         <div className="params-label">
           压缩质量
-          <span className="value">
-            {params.quality}
-            {jpgOnlyHint}
-          </span>
+          <span className="value">{params.quality}</span>
         </div>
         <div className="slider-row">
           <input
@@ -86,7 +85,7 @@ export function ParamsPanel(): React.JSX.Element {
             }}
           />
         </div>
-        <div className="params-hint">仅对 JPG 输出生效，值越低体积越小。</div>
+        <div className="params-hint">{qualityHint}</div>
       </div>
 
       <div className="params-section">

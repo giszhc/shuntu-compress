@@ -4,7 +4,12 @@ import os from "node:os";
 import path from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { InstallError } from "../errors.js";
-import { installWindowsVips, sha256File, verifySha256 } from "../installer.js";
+import {
+  installWindowsVips,
+  installMacOSVips,
+  sha256File,
+  verifySha256
+} from "../installer.js";
 
 let root: string;
 
@@ -121,5 +126,86 @@ describe("installWindowsVips（注入 downloader/unzipper）", () => {
       /* finalize 阶段失败是预期的（假 exe 无法运行） */
     });
     expect(phases).toEqual(["download", "verify", "extract", "finalize"]);
+  });
+});
+
+describe("installMacOSVips（经 Homebrew，伪造 brew 注入）", () => {
+  /** 写一个假的 vips 可执行脚本：--version 打印版本即视为可运行 */
+  async function writeFakeVips(prefix: string): Promise<string> {
+    const bin = path.join(prefix, "bin");
+    await fs.promises.mkdir(bin, { recursive: true });
+    const vips = path.join(bin, "vips");
+    await fs.promises.writeFile(
+      vips,
+      '#!/bin/sh\necho "vips-8.18.0"\n',
+      { mode: 0o755 }
+    );
+    return vips;
+  }
+
+  /** 写假的 brew 脚本；install 分支可指定行为（创建 vips / 报错） */
+  async function writeFakeBrew(
+    prefix: string,
+    onInstall: "create" | "fail"
+  ): Promise<string> {
+    const brew = path.join(root, `brew-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    const script = `#!/bin/sh
+if [ "$1" = "--prefix" ]; then
+  echo "${prefix}"
+  exit 0
+fi
+if [ "$1" = "install" ]; then
+  if [ "${onInstall}" = "create" ]; then
+    mkdir -p "${prefix}/bin"
+    printf '#!/bin/sh\\necho "vips-8.18.0"\\n' > "${prefix}/bin/vips"
+    chmod +x "${prefix}/bin/vips"
+    exit 0
+  else
+    echo "UNEXPECTED install" >&2
+    exit 1
+  fi
+fi
+exit 0
+`;
+    await fs.promises.writeFile(brew, script, { mode: 0o755 });
+    return brew;
+  }
+
+  it("未找到 brew 时抛 InstallError 并提示 Homebrew", async () => {
+    await expect(
+      installMacOSVips({ brew: path.join(root, "no-such-brew") })
+    ).rejects.toThrow(InstallError);
+    await expect(
+      installMacOSVips({ brew: path.join(root, "no-such-brew") })
+    ).rejects.toThrow(/Homebrew/);
+  });
+
+  it("已安装时直接复用，不触发 brew install", async () => {
+    const prefix = path.join(root, "mac-ready");
+    const vips = await writeFakeVips(prefix);
+    const brew = await writeFakeBrew(prefix, "fail");
+    const result = await installMacOSVips({ brew });
+    expect(result).toBe(vips);
+  });
+
+  it("未安装时经 brew install 完成安装并返回 vips 路径", async () => {
+    const prefix = path.join(root, "mac-install");
+    // 仅创建前缀目录，但不放 vips，模拟未安装状态
+    await fs.promises.mkdir(prefix, { recursive: true });
+    const brew = await writeFakeBrew(prefix, "create");
+    const result = await installMacOSVips({ brew });
+    expect(result).toBe(path.join(prefix, "bin", "vips"));
+    expect(fs.existsSync(result)).toBe(true);
+  });
+
+  it("取消信号在 brew --prefix 前生效", async () => {
+    const controller = new AbortController();
+    controller.abort();
+    await expect(
+      installMacOSVips({
+        brew: await writeFakeBrew(path.join(root, "mac-abort"), "fail"),
+        signal: controller.signal
+      })
+    ).rejects.toThrow("任务已取消");
   });
 });
