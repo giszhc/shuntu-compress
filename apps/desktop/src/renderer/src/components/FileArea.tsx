@@ -5,7 +5,15 @@
  * - 拖拽路径通过 preload 的 dropUtils.getPathsForFiles 提取（渲染进程无 Node 能力）。
  */
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { FolderOpen, ImagePlus, ImageUp, Loader2, Trash2 } from "lucide-react";
+import {
+  FolderOpen,
+  ImageDown,
+  ImageIcon,
+  ImagePlus,
+  Loader2,
+  Sparkles,
+  Trash2
+} from "lucide-react";
 import { useCallback, useMemo, useRef, useState } from "react";
 import type { FileEntry } from "../../../shared/ipc-types";
 import { useFileStore } from "../stores/fileStore";
@@ -13,8 +21,9 @@ import { useTaskStore } from "../stores/taskStore";
 import { formatBytes } from "../utils/format";
 import { DirRow, FileRow } from "./FileRow";
 import type { DirAggregate } from "./FileRow";
+import "../styles/compress.css";
 
-const ROW_HEIGHT = 56; // 与 --row-height 保持一致
+const ROW_HEIGHT = 64; // 与 .file-row height 保持一致（缩略图加大后行高增加）
 
 type Row =
   | { kind: "file"; entry: FileEntry }
@@ -124,7 +133,7 @@ export function FileArea(): React.JSX.Element {
 
   return (
     <section
-      className={`file-area${dragOver ? " drag-over" : ""}`}
+      className={`compress-drop${dragOver ? " drag-over" : ""}`}
       onDragEnter={e => {
         e.preventDefault();
         dragDepth.current += 1;
@@ -137,13 +146,12 @@ export function FileArea(): React.JSX.Element {
       }}
       onDragOver={e => e.preventDefault()}
       onDrop={onDrop}
-      style={{ position: "relative" }}
     >
       {entries.length > 0 && (
-        <div className="file-toolbar">
+        <div className="compress-drop-toolbar">
           <button
             type="button"
-            className="btn btn-secondary"
+            className="btn btn-primary"
             disabled={running || scanning}
             onClick={() => void pickFiles()}
           >
@@ -158,14 +166,14 @@ export function FileArea(): React.JSX.Element {
             <FolderOpen size={14} /> 添加文件夹
           </button>
           <div className="spacer" />
-          <span className="file-toolbar-info">
+          <span className="compress-drop-toolbar-info">
             {scanning
               ? `正在扫描…已发现 ${scannedCount} 张`
               : `共 ${entries.length} 张图片 · ${formatBytes(totalSize)}`}
           </span>
           <button
             type="button"
-            className="btn btn-secondary"
+            className="btn btn-danger-soft"
             disabled={running || scanning}
             onClick={clear}
             title="清空列表"
@@ -176,73 +184,91 @@ export function FileArea(): React.JSX.Element {
       )}
 
       {entries.length === 0 ? (
-        <div className="empty-state">
-          <div className="icon-wrap">
-            {scanning ? <Loader2 size={32} className="spin" /> : <ImageUp size={32} />}
+        <div className="compress-drop-empty">
+          <div className="compress-drop-icon">
+            {scanning ? (
+              <Loader2 size={44} className="spin" strokeWidth={1.6} />
+            ) : (
+              <ImageDown size={44} strokeWidth={1.5} />
+            )}
+            <div className="compress-drop-icon-sparkle" aria-hidden>
+              <Sparkles size={14} />
+            </div>
           </div>
-          <h3>
+          <h3 className="compress-drop-title">
             {scanning
               ? `正在扫描图片…${scannedCount > 0 ? `已发现 ${scannedCount} 张` : ""}`
               : "拖入图片或文件夹开始压缩"}
           </h3>
-          <p>
-            支持 JPG / PNG 格式，可拖入多个文件或整个文件夹。
-            输出保存到独立目录，绝不覆盖原图。
+          <p className="compress-drop-desc">
+            支持 JPG / PNG 格式，可拖入多个文件或整个文件夹
+            <br />
+            <span className="sub">输出保存到独立目录，绝不覆盖原图</span>
           </p>
           {!scanning && (
-            <div className="empty-actions">
+            <div className="compress-drop-actions">
               <button
                 type="button"
-                className="btn btn-primary"
+                className="btn btn-primary btn-lg"
                 onClick={() => void pickFiles()}
               >
-                <ImagePlus size={14} /> 选择文件
+                <ImageIcon size={15} /> 选择文件
               </button>
               <button
                 type="button"
-                className="btn btn-secondary"
+                className="btn btn-secondary btn-lg"
                 onClick={() => void pickDirectory()}
               >
-                <FolderOpen size={14} /> 选择文件夹
+                <FolderOpen size={15} /> 选择文件夹
               </button>
             </div>
           )}
         </div>
       ) : (
-        <div className="file-list" ref={scrollRef}>
-          <div style={{ height: virtualizer.getTotalSize(), position: "relative" }}>
-            {virtualizer.getVirtualItems().map(v => {
-              const row = rows[v.index];
-              if (row.kind === "dir") {
+        <>
+          {/* 列标题 */}
+          <div className="compress-file-list-header">
+            <span className="col-name-head">文件名</span>
+            <span className="col-size-head">大小</span>
+            <span className="col-status-head">状态</span>
+            <span className="col-actions-head">操作</span>
+          </div>
+          {/* 虚拟列表 */}
+          <div className="compress-file-list" ref={scrollRef}>
+            <div style={{ height: virtualizer.getTotalSize(), position: "relative" }}>
+              {virtualizer.getVirtualItems().map(v => {
+                const row = rows[v.index];
+                if (row.kind === "dir") {
+                  return (
+                    <DirRow
+                      key={`dir:${row.rootDir}`}
+                      rootDir={row.rootDir}
+                      dirName={row.dirName}
+                      agg={aggregateDir(row.members)}
+                      running={running}
+                      top={v.start}
+                      onRemoveDir={removeDir}
+                    />
+                  );
+                }
                 return (
-                  <DirRow
-                    key={`dir:${row.rootDir}`}
-                    rootDir={row.rootDir}
-                    dirName={row.dirName}
-                    agg={aggregateDir(row.members)}
+                  <FileRow
+                    key={row.entry.absolutePath}
+                    entry={row.entry}
+                    item={items[row.entry.absolutePath]}
                     running={running}
                     top={v.start}
-                    onRemoveDir={removeDir}
+                    onRemove={remove}
                   />
                 );
-              }
-              return (
-                <FileRow
-                  key={row.entry.absolutePath}
-                  entry={row.entry}
-                  item={items[row.entry.absolutePath]}
-                  running={running}
-                  top={v.start}
-                  onRemove={remove}
-                />
-              );
-            })}
+              })}
+            </div>
           </div>
-        </div>
+        </>
       )}
 
       {dragOver && (
-        <div className="drop-hint">
+        <div className="compress-drop-hint">
           <span>松开以添加图片</span>
         </div>
       )}

@@ -46,8 +46,8 @@
   /* 尺寸 */
   --titlebar-height: 44px;
   --statusbar-height: 64px;
-  --params-width: 320px;
-  --row-height: 56px;
+  --params-width: 400px;
+  --row-height: 64px;
 
   /* 字体 */
   --font-family:

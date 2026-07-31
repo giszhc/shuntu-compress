@@ -9,7 +9,7 @@ import {
   CheckCircle2,
   CircleDashed,
   FileImage,
-  Folder,
+  FolderOpen,
   Loader2,
   Trash2,
   XCircle
@@ -78,10 +78,16 @@ export const FileRow = memo(function FileRow({
   top,
   onRemove
 }: FileProps): React.JSX.Element {
+  const ext = entry.fileName.toLowerCase().split(".").pop() ?? "";
+  // 所有图片统一蓝色标识（jpg/png/webp 同色），文件夹黄色，其他灰色
+  const iconTone =
+    ext === "jpg" || ext === "jpeg" || ext === "png" || ext === "webp"
+      ? "image"
+      : "other";
   return (
     <div className="file-row" style={{ top }}>
-      <div className="file-icon">
-        <FileImage size={16} />
+      <div className={`file-icon file-icon--${iconTone}`}>
+        <FileImage size={20} />
       </div>
       <div className="col-name">
         <div className="name" title={entry.absolutePath}>
@@ -176,8 +182,8 @@ export const DirRow = memo(function DirRow({
 }: DirProps): React.JSX.Element {
   return (
     <div className="file-row dir-row" style={{ top }}>
-      <div className="file-icon dir-icon">
-        <Folder size={16} />
+      <div className="file-icon file-icon--dir">
+        <FolderOpen size={20} />
       </div>
       <div className="col-name">
         <div className="name" title={rootDir}>

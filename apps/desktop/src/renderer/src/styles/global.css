@@ -274,7 +274,7 @@ select {
 .file-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   padding: 0 12px;
   height: var(--row-height);
   border-bottom: 1px solid var(--divider);
@@ -293,15 +293,33 @@ select {
 }
 
 .file-icon {
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   background: var(--control-bg);
   color: var(--text-tertiary);
+}
+
+/* 文件类型色板（图片统一蓝色，文件夹黄色，其他灰色） */
+.file-icon--image {
+  color: #fff;
+  background: linear-gradient(135deg, #1677ff 0%, #4096ff 100%);
+  box-shadow: 0 2px 6px rgba(22, 119, 255, 0.18);
+}
+.file-icon--other {
+  color: var(--text-secondary);
+  background: var(--control-bg);
+}
+
+/* 文件夹：Windows 文件夹黄 + 展开图标（FolderOpen） */
+.file-icon--dir {
+  color: #fff;
+  background: linear-gradient(135deg, #e8a33d 0%, #f5bd3f 100%);
+  box-shadow: 0 2px 6px rgba(232, 163, 61, 0.2);
 }
 
 .col-name {
@@ -315,8 +333,6 @@ select {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  direction: rtl; /* 长文件名中间/头部省略，保留结尾 */
-  text-align: left;
 }
 
 .col-name .sub {
@@ -332,20 +348,20 @@ select {
 }
 
 .col-size {
-  width: 76px;
+  width: 84px;
   flex-shrink: 0;
   font-size: 12px;
   color: var(--text-secondary);
-  text-align: right;
+  text-align: left;
   font-variant-numeric: tabular-nums;
 }
 
 .col-status {
-  width: 110px;
+  width: 120px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: center;
   gap: 4px;
   font-size: 12px;
 }

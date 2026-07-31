@@ -17,6 +17,17 @@ import { installCrashHandlers, logInfo } from "./crash-logger";
 // 子进程消失 / 进程退出）。只记录不退出，防止非关键错误误杀主进程导致“闪退”。
 installCrashHandlers();
 
+// 用软件渲染（SwiftShader）初始化 GPU 进程，并去掉 GPU 进程沙箱，
+// 避免在无 GPU / 沙箱 / 虚拟化环境下 GPU 进程崩溃导致页面白屏或应用启动即退出。
+// 同时禁用 GPU 合成（disable-gpu-compositing），强制走 CPU 合成，
+// 避免 Chrome 默认 GPU 合成器在无 GPU 环境下绘制出纯白窗口。
+// UI 较简单，软件渲染对性能影响可忽略；如用户机器 GPU 正常可自行加 --use-angle=default 还原。
+app.commandLine.appendSwitch("disable-gpu-sandbox");
+app.commandLine.appendSwitch("disable-gpu-compositing");
+app.commandLine.appendSwitch("use-gl", "angle");
+app.commandLine.appendSwitch("use-angle", "swiftshader");
+app.commandLine.appendSwitch("enable-unsafe-swiftshader");
+
 // e2e/测试注入：--force-theme=light|dark 覆盖系统主题；--vips-cache-root=<dir> 注入缓存目录；
 // --user-data-dir=<dir> 隔离用户数据（必须在单实例锁之前设置）
 const forcedTheme = app.commandLine.getSwitchValue("force-theme");
@@ -167,6 +178,16 @@ function createWindow(): void {
   });
 
   mainWindow.once("ready-to-show", () => mainWindow?.show());
+
+  // 本地调试：F12 开关开发者工具（仅 dev，避免无 GPU 环境自动打开 DevTools 导致渲染进程崩溃）
+  if (!app.isPackaged) {
+    mainWindow.webContents.on("before-input-event", (event, input) => {
+      if (input.type === "keyDown" && input.key === "F12") {
+        mainWindow?.webContents.toggleDevTools();
+        event.preventDefault();
+      }
+    });
+  }
 
   // 窗口/渲染层异常轨迹：便于区分“主进程退出”与“渲染进程崩溃”
   mainWindow.webContents.on("did-fail-load", (_e, code, desc) =>

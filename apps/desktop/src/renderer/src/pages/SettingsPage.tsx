@@ -1,9 +1,22 @@
 /**
- * 设置页：默认参数、主题、下载缓存管理、恢复默认。
+ * 设置页（按设计图美化）：分组卡片 + 行（左图标 / 标题描述 / 控件）。
  * 每次修改立即持久化到主进程 settings.json。
  */
+import {
+  Cpu,
+  Download,
+  FolderTree,
+  FolderOpen,
+  Gift,
+  Image as ImageIcon,
+  Layers,
+  Palette,
+  Rocket,
+  RotateCcw
+} from "lucide-react";
 import { useSettingsStore } from "../stores/settingsStore";
 import { useUiStore } from "../stores/uiStore";
+import "../styles/settings.css";
 
 export function SettingsPage(): React.JSX.Element {
   const settings = useSettingsStore(s => s.settings);
@@ -21,29 +34,44 @@ export function SettingsPage(): React.JSX.Element {
 
   return (
     <div className="page">
-      <h1>设置</h1>
+      <header className="settings-header">
+        <h1>设置</h1>
+        <p className="subtitle">自定义瞬图压缩的行为与外观</p>
+      </header>
 
-      <div className="settings-group">
-        <h2>默认压缩参数</h2>
+      {/* 默认压缩参数 */}
+      <section className="settings-group">
+        <h2 className="settings-group-title">
+          <span className="group-icon"><Gift size={16} /></span>
+          默认压缩参数
+        </h2>
         <div className="settings-card">
+          {/* 默认质量：Slider + 数值 */}
           <div className="settings-row">
+            <span className="row-icon"><ImageIcon size={18} /></span>
             <div className="info">
               <div className="title">默认质量</div>
-              <div className="desc">新会话参数面板的初始质量（1-100）</div>
+              <div className="desc">新会话弹窗面板的初始质量（1~100）</div>
             </div>
             <div className="control">
               <input
                 type="range"
                 min={1}
                 max={100}
-                style={{ width: 120 }}
+                className="slider"
+                style={{
+                  ["--fill" as string]: `${((settings.quality - 1) / 99) * 100}%`
+                }}
                 value={settings.quality}
                 onChange={e => patch({ quality: Number(e.target.value) })}
               />
-              <span style={{ width: 28, textAlign: "right" }}>{settings.quality}</span>
+              <span className="slider-value">{settings.quality}</span>
             </div>
           </div>
+
+          {/* 默认递归子目录：Toggle */}
           <div className="settings-row">
+            <span className="row-icon"><FolderTree size={18} /></span>
             <div className="info">
               <div className="title">默认递归子目录</div>
               <div className="desc">添加文件夹时是否扫描子目录</div>
@@ -60,7 +88,10 @@ export function SettingsPage(): React.JSX.Element {
               </button>
             </div>
           </div>
+
+          {/* 默认保留目录结构：Toggle */}
           <div className="settings-row">
+            <span className="row-icon"><Layers size={18} /></span>
             <div className="info">
               <div className="title">默认保留目录结构</div>
               <div className="desc">输出时保留相对目录层级</div>
@@ -77,13 +108,16 @@ export function SettingsPage(): React.JSX.Element {
               </button>
             </div>
           </div>
+
+          {/* 默认并发数：Segmented */}
           <div className="settings-row">
+            <span className="row-icon"><Cpu size={18} /></span>
             <div className="info">
               <div className="title">默认并发数</div>
-              <div className="desc">同时处理的图片数量（1-4）</div>
+              <div className="desc">同时处理的图片数量（1~4）</div>
             </div>
             <div className="control">
-              <div className="segmented" style={{ minWidth: 140 }}>
+              <div className="segmented" style={{ minWidth: 160 }}>
                 {[1, 2, 3, 4].map(n => (
                   <button
                     key={n}
@@ -97,7 +131,10 @@ export function SettingsPage(): React.JSX.Element {
               </div>
             </div>
           </div>
+
+          {/* 完成后打开输出目录：Toggle */}
           <div className="settings-row">
+            <span className="row-icon"><Rocket size={18} /></span>
             <div className="info">
               <div className="title">完成后打开输出目录</div>
               <div className="desc">任务成功结束后自动打开资源管理器</div>
@@ -115,18 +152,22 @@ export function SettingsPage(): React.JSX.Element {
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
-      <div className="settings-group">
-        <h2>外观</h2>
+      {/* 外观 */}
+      <section className="settings-group">
+        <h2 className="settings-group-title">
+          <span className="group-icon"><Palette size={16} /></span>
+          外观
+        </h2>
         <div className="settings-card">
           <div className="settings-row">
             <div className="info">
               <div className="title">主题</div>
-              <div className="desc">跟随系统或固定亮/暗色</div>
+              <div className="desc">跟随系统或固定亮 / 暗色</div>
             </div>
             <div className="control">
-              <div className="segmented">
+              <div className="segmented" style={{ minWidth: 260 }}>
                 {(
                   [
                     { label: "跟随系统", value: "system" },
@@ -147,10 +188,14 @@ export function SettingsPage(): React.JSX.Element {
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
-      <div className="settings-group">
-        <h2>下载缓存</h2>
+      {/* 下载缓存 */}
+      <section className="settings-group">
+        <h2 className="settings-group-title">
+          <span className="group-icon"><Download size={16} /></span>
+          下载缓存
+        </h2>
         <div className="settings-card">
           <div className="settings-row">
             <div className="info">
@@ -160,7 +205,7 @@ export function SettingsPage(): React.JSX.Element {
             <div className="control">
               <button
                 type="button"
-                className="btn btn-secondary"
+                className="btn-soft"
                 onClick={() => {
                   void window.app
                     .vipsClearCache()
@@ -175,19 +220,35 @@ export function SettingsPage(): React.JSX.Element {
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
-      <div className="settings-group">
-        <button
-          type="button"
-          className="btn btn-danger-ghost"
-          onClick={() => {
-            void resetSettings().then(() => toast("已恢复默认设置", "success"));
-          }}
-        >
+      {/* 恢复默认 */}
+      <section className="settings-group settings-group--danger">
+        <h2 className="settings-group-title">
+          <span className="group-icon"><RotateCcw size={16} /></span>
           恢复默认设置
-        </button>
-      </div>
+        </h2>
+        <div className="settings-card">
+          <div className="settings-row">
+            <div className="info">
+              <div className="title">恢复默认设置</div>
+              <div className="desc">将所有设置恢复为默认值</div>
+            </div>
+            <div className="control">
+              <button
+                type="button"
+                className="btn-danger-soft"
+                onClick={() => {
+                  void resetSettings().then(() => toast("已恢复默认设置", "success"));
+                }}
+              >
+                <RotateCcw size={14} />
+                恢复默认设置
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

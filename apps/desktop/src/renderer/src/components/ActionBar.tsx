@@ -1,7 +1,8 @@
 /**
  * 底部操作栏：统计信息 + 进度条 + 开始/取消按钮。
+ * 视觉与设计图保持一致：左侧带图标的文件统计，中间进度条，右侧主操作按钮。
  */
-import { Loader2, Play, Square } from "lucide-react";
+import { FolderOpen, Loader2, Play, Square } from "lucide-react";
 import { useFileStore } from "../stores/fileStore";
 import { useTaskStore } from "../stores/taskStore";
 import { formatBytes } from "../utils/format";
@@ -22,6 +23,7 @@ export function ActionBar(): React.JSX.Element {
   return (
     <footer className="action-bar">
       <div className="action-stats">
+        <FolderOpen size={14} className="action-stats-icon" />
         {entries.length > 0
           ? `${entries.length} 个文件 · ${formatBytes(totalSize)}`
           : "尚未添加文件"}
