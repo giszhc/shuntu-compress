@@ -47,7 +47,7 @@ export function AboutPage(): React.JSX.Element {
             <p className="about-app-desc">
               高效的本地图片压缩工具
               <br />
-              支持 JPG / PNG 批量压缩，等比缩放与格式转换
+              支持 JPG / PNG / WebP / GIF / TIFF / BMP 批量压缩，等比缩放与格式转换
             </p>
           </div>
 

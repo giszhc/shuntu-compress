@@ -79,9 +79,16 @@ export const FileRow = memo(function FileRow({
   onRemove
 }: FileProps): React.JSX.Element {
   const ext = entry.fileName.toLowerCase().split(".").pop() ?? "";
-  // 所有图片统一蓝色标识（jpg/png/webp 同色），文件夹黄色，其他灰色
+  // 所有图片统一蓝色标识（jpg/png/webp/gif/tiff/bmp 同色），文件夹黄色，其他灰色
   const iconTone =
-    ext === "jpg" || ext === "jpeg" || ext === "png" || ext === "webp"
+    ext === "jpg" ||
+    ext === "jpeg" ||
+    ext === "png" ||
+    ext === "webp" ||
+    ext === "gif" ||
+    ext === "tiff" ||
+    ext === "tif" ||
+    ext === "bmp"
       ? "image"
       : "other";
   return (

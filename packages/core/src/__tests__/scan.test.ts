@@ -31,8 +31,18 @@ describe("isSupportedImage", () => {
     expect(isSupportedImage("a.JPG")).toBe(true);
     expect(isSupportedImage("a.jpeg")).toBe(true);
     expect(isSupportedImage("a.PNG")).toBe(true);
-    expect(isSupportedImage("a.webp")).toBe(false);
+    expect(isSupportedImage("a.webp")).toBe(true);
+    expect(isSupportedImage("a.GIF")).toBe(true);
+    expect(isSupportedImage("a.tiff")).toBe(true);
+    expect(isSupportedImage("a.bmp")).toBe(true);
     expect(isSupportedImage("a.txt")).toBe(false);
+    expect(isSupportedImage("a.avif")).toBe(false);
+  });
+
+  it("未验证的格式被过滤（heic/heif/svg 不承诺支持）", () => {
+    expect(isSupportedImage("a.heic")).toBe(false);
+    expect(isSupportedImage("a.heif")).toBe(false);
+    expect(isSupportedImage("a.svg")).toBe(false);
   });
 });
 

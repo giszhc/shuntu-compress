@@ -15,7 +15,11 @@ export interface OutputPlanRequest {
   dedup?: boolean;
 }
 
-/** 归一化输出扩展名：--ext 传什么用什么（与 CLI 一致），桌面端 JPG 统一传 .jpg */
+/**
+ * 归一化输出扩展名：--ext 传什么用什么（与 CLI 一致），桌面端 JPG 统一传 .jpg。
+ * 说明：输入白名单（SUPPORTED_EXTS）内的格式均有无损对应的保存算子（bmp→magicksave），
+ * 故保持原格式无需回退；若未来加入无法输出的输入格式，在此处做回退处理。
+ */
 export function resolveTargetExt(input: string, ext: OutputExt | null): string {
   return ext ?? path.extname(input).toLowerCase();
 }

@@ -68,6 +68,36 @@ export function buildVipsSteps(
       pngArgs.push("--Q=100");
     }
     steps.push({ args: pngArgs });
+  } else if (outExt === ".webp") {
+    // WebP：有损压缩，--Q 语义与 JPG 一致；--keep none 剥离元数据减小体积
+    steps.push({
+      args: [
+        "webpsave",
+        temporary,
+        finalTarget,
+        `--Q=${options.quality}`,
+        "--keep",
+        "none"
+      ]
+    });
+  } else if (outExt === ".gif") {
+    // GIF 为 256 色调色板格式（8 位索引），无质量参数；--dither 默认开启抗色带
+    steps.push({ args: ["gifsave", temporary, finalTarget] });
+  } else if (outExt === ".tiff" || outExt === ".tif") {
+    // TIFF：JPEG 压缩（有损，--Q 生效），兼顾体积与兼容性
+    steps.push({
+      args: [
+        "tiffsave",
+        temporary,
+        finalTarget,
+        "--compression",
+        "jpeg",
+        `--Q=${options.quality}`
+      ]
+    });
+  } else if (outExt === ".bmp") {
+    // BMP 无压缩概念，经 ImageMagick 写出（保持原格式时的直通路径）
+    steps.push({ args: ["magicksave", temporary, finalTarget] });
   } else {
     throw new VipsError(`不支持的输出格式：${outExt}`);
   }

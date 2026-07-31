@@ -50,15 +50,20 @@ describe("validateExt", () => {
     expect(validateExt("")).toBeNull();
   });
 
-  it("接受 .jpg/.jpeg/.png（大小写不敏感）", () => {
+  it("接受 .jpg/.jpeg/.png/.webp/.gif/.tiff（大小写不敏感）", () => {
     expect(validateExt(".jpg")).toBe(".jpg");
     expect(validateExt(".JPEG")).toBe(".jpeg");
     expect(validateExt(".PNG")).toBe(".png");
+    expect(validateExt(".WebP")).toBe(".webp");
+    expect(validateExt(".GIF")).toBe(".gif");
+    expect(validateExt(".tiff")).toBe(".tiff");
   });
 
   it("拒绝其他格式", () => {
-    for (const bad of [".webp", "jpg", ".gif", 42]) {
-      expect(() => validateExt(bad)).toThrow("--ext 仅支持 .jpg、.jpeg 或 .png");
+    for (const bad of [".avif", "jpg", ".gifx", 42]) {
+      expect(() => validateExt(bad)).toThrow(
+        "--ext 仅支持 .jpg、.jpeg、.png、.webp、.gif 或 .tiff"
+      );
     }
   });
 });

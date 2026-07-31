@@ -14,7 +14,21 @@ export class DialogService {
     const result = await dialog.showOpenDialog(window, {
       title: "选择图片",
       properties: ["openFile", "multiSelections"],
-      filters: [{ name: "图片文件", extensions: ["jpg", "jpeg", "png"] }]
+      filters: [
+        {
+          name: "图片文件",
+          extensions: [
+            "jpg",
+            "jpeg",
+            "png",
+            "webp",
+            "gif",
+            "tiff",
+            "tif",
+            "bmp"
+          ]
+        }
+      ]
     });
     return result.canceled ? [] : result.filePaths;
   }

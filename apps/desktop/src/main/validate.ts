@@ -5,11 +5,13 @@
 import path from "node:path";
 import {
   ConfigError,
+  SUPPORTED_EXTS,
   validateConcurrency,
   validateExt,
   validateQuality,
   validateSize
 } from "@giszhc/vips-thumbnail-core";
+import type { SupportedExt } from "@giszhc/vips-thumbnail-core";
 import type {
   FileEntry,
   ProcessOptions,
@@ -64,7 +66,7 @@ function validateFileEntry(raw: unknown): FileEntry {
   const absolutePath = assertAbsolutePath(entry.absolutePath, "文件路径");
   const rootDir = assertAbsolutePath(entry.rootDir, "文件所属目录");
   const ext = String(entry.ext ?? "").toLowerCase();
-  if (![".jpg", ".jpeg", ".png"].includes(ext)) {
+  if (!SUPPORTED_EXTS.includes(ext as SupportedExt)) {
     throw new ConfigError(`不支持的图片格式：${ext || "未知"}`);
   }
   return {

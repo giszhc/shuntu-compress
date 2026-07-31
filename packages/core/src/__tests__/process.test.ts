@@ -95,9 +95,48 @@ describe("buildVipsSteps", () => {
     expect(steps?.[1].args[0]).toBe("jpegsave");
   });
 
+  it("WebP 输出走 webpsave（带质量与元数据剥离）", () => {
+    const steps = buildVipsSteps("a.png", "out.webp", "tmp", {
+      quality: 80,
+      size: null,
+      ext: ".webp"
+    });
+    expect(steps?.[1].args[0]).toBe("webpsave");
+    expect(steps?.[1].args).toContain("--Q=80");
+    expect(steps?.[1].args).toContain("--keep");
+  });
+
+  it("GIF 输出走 gifsave", () => {
+    const steps = buildVipsSteps("a.png", "out.gif", "tmp", {
+      quality: 85,
+      size: null,
+      ext: ".gif"
+    });
+    expect(steps?.[1].args[0]).toBe("gifsave");
+  });
+
+  it("TIFF 输出走 tiffsave（JPEG 压缩）", () => {
+    const steps = buildVipsSteps("a.png", "out.tiff", "tmp", {
+      quality: 85,
+      size: null,
+      ext: ".tiff"
+    });
+    expect(steps?.[1].args[0]).toBe("tiffsave");
+    expect(steps?.[1].args).toContain("--compression");
+  });
+
+  it("BMP 输出走 magicksave", () => {
+    const steps = buildVipsSteps("a.bmp", "out.bmp", "tmp", {
+      quality: 85,
+      size: null,
+      ext: null
+    });
+    expect(steps?.[1].args[0]).toBe("magicksave");
+  });
+
   it("不支持的输出格式抛 VipsError", () => {
     expect(() =>
-      buildVipsSteps("a.jpg", "out.webp", "tmp", {
+      buildVipsSteps("a.jpg", "out.avif", "tmp", {
         quality: 85,
         size: 100,
         ext: null

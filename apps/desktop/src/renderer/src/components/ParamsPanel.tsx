@@ -64,7 +64,11 @@ export function ParamsPanel(): React.JSX.Element {
   const qualityHint =
     params.ext === ".png"
       ? "PNG 为无损格式：低于 100 时启用调色板量化，对截图 / 图标 / 插画最明显；照片类基本不减小。"
-      : "JPG 为有损压缩，值越低体积越小。";
+      : params.ext === ".gif"
+        ? "GIF 固定为 256 色调色板，无质量参数，适合动图 / 低色彩图像。"
+        : params.ext === ".tiff"
+          ? "TIFF 使用 JPEG 压缩，值越低体积越小，兼容专业图像软件。"
+          : "JPG / WebP 为有损压缩，值越低体积越小。";
 
   return (
     <aside className="compress-params">
@@ -178,16 +182,29 @@ export function ParamsPanel(): React.JSX.Element {
             <span className="compress-params-label">输出格式</span>
           </div>
           <div className="compress-params-card">
-            <SegmentedControl
-              options={[
-                { label: "保持原格式", value: null },
-                { label: "JPG", value: ".jpg" },
-                { label: "PNG", value: ".png" }
-              ]}
-              value={params.ext}
-              onChange={v => setParam("ext", v)}
-              disabled={running}
-            />
+            {/* 与最大边尺寸同款 3 列网格，选中态/悬停交互完全一致 */}
+            <div className="compress-size-grid">
+              {(
+                [
+                  { label: "保持原格式", value: null },
+                  { label: "JPG", value: ".jpg" },
+                  { label: "PNG", value: ".png" },
+                  { label: "WebP", value: ".webp" },
+                  { label: "GIF", value: ".gif" },
+                  { label: "TIFF", value: ".tiff" }
+                ] as const
+              ).map(opt => (
+                <button
+                  key={opt.label}
+                  type="button"
+                  className={params.ext === opt.value ? "active" : ""}
+                  disabled={running}
+                  onClick={() => setParam("ext", opt.value)}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
           </div>
         </section>
 

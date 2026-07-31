@@ -31,7 +31,7 @@ export interface Settings {
   /** 默认最长边；null=保持原尺寸 */
   size: number | null;
   /** 默认输出格式；null=保持原格式 */
-  ext: ".jpg" | ".png" | null;
+  ext: OutputExt | null;
   /** 默认递归子目录 */
   recursive: boolean;
   /** 默认保留目录结构 */

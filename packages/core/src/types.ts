@@ -1,7 +1,20 @@
-export type SupportedExt = ".jpg" | ".jpeg" | ".png";
+/**
+ * 支持的输入格式白名单（稳定可靠优先：全部经加载+保存闭环实测）。
+ * - heic/heif/svg 已过滤：heif 解码未验证且无法输出，svg 无保存算子，
+ *   "保持原格式"语义会破裂，故不列入。
+ */
+export type SupportedExt =
+  | ".jpg"
+  | ".jpeg"
+  | ".png"
+  | ".webp"
+  | ".gif"
+  | ".tiff"
+  | ".tif"
+  | ".bmp";
 
-/** 输出扩展名：--ext 允许 .jpg/.jpeg/.png，与 CLI 协议保持一致 */
-export type OutputExt = ".jpg" | ".jpeg" | ".png";
+/** 输出扩展名：--ext 允许 .jpg/.jpeg/.png/.webp/.gif/.tiff，与 CLI 协议保持一致 */
+export type OutputExt = ".jpg" | ".jpeg" | ".png" | ".webp" | ".gif" | ".tiff";
 
 /** 输出目录模式：CLI 为拍平（flat），桌面端默认保留相对结构（preserve） */
 export type OutputMode = "flat" | "preserve";

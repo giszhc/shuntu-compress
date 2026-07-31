@@ -201,7 +201,7 @@ export function FileArea(): React.JSX.Element {
               : "拖入图片或文件夹开始压缩"}
           </h3>
           <p className="compress-drop-desc">
-            支持 JPG / PNG 格式，可拖入多个文件或整个文件夹
+            支持 JPG / PNG / WebP / GIF / TIFF / BMP 等格式，可拖入多个文件或整个文件夹
             <br />
             <span className="sub">输出保存到独立目录，绝不覆盖原图</span>
           </p>
