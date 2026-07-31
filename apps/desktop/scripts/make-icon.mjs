@@ -15,7 +15,6 @@ import { dirname, join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { PNG } from "pngjs";
 
 const currentDir = dirname(fileURLToPath(import.meta.url));
 const outDir = join(currentDir, "..", "build");
@@ -108,45 +107,28 @@ function renderPng(size, targetPath) {
 }
 
 /**
- * 用 pngjs 将源 PNG 双线性缩放为 size×size，避免无头浏览器在小尺寸窗口截图不可靠的问题。
+ * 生成渲染进程标题栏 logo（64px）：macOS 用系统 sips 从 1024px 主图缩放（可靠、零依赖）；
+ * 其他平台无 sips，跳过（保留仓库中已有的有效 app-icon.png）。
  */
-function downscalePng(srcPath, dstPath, size) {
-  const src = PNG.sync.read(readFileSync(srcPath));
-  const { width: w, height: h, data: s } = src;
-  const dst = new PNG({ width: size, height: size });
-  const d = dst.data;
-  const xRatio = w / size;
-  const yRatio = h / size;
-  for (let y = 0; y < size; y++) {
-    const fy = (y + 0.5) * yRatio - 0.5;
-    const y0 = Math.max(0, Math.min(h - 1, Math.floor(fy)));
-    const y1 = Math.min(h - 1, y0 + 1);
-    const ty = fy - y0;
-    for (let x = 0; x < size; x++) {
-      const fx = (x + 0.5) * xRatio - 0.5;
-      const x0 = Math.max(0, Math.min(w - 1, Math.floor(fx)));
-      const x1 = Math.min(w - 1, x0 + 1);
-      const tx = fx - x0;
-      const i00 = (y0 * w + x0) * 4;
-      const i10 = (y0 * w + x1) * 4;
-      const i01 = (y1 * w + x0) * 4;
-      const i11 = (y1 * w + x1) * 4;
-      const di = (y * size + x) * 4;
-      for (let c = 0; c < 4; c++) {
-        const top = s[i00 + c] + (s[i10 + c] - s[i00 + c]) * tx;
-        const bot = s[i01 + c] + (s[i11 + c] - s[i01 + c]) * tx;
-        d[di + c] = top + (bot - top) * ty;
-      }
+function makeRendererAppIcon() {
+  const dstPath = join(currentDir, "..", "src", "renderer", "src", "assets", "app-icon.png");
+  if (process.platform === "darwin") {
+    const result = spawnSync("sips", ["-z", "64", "64", pngPath, "--out", dstPath], {
+      stdio: "ignore"
+    });
+    if (result.status !== 0) {
+      throw new Error(`sips 生成 app-icon.png 失败，退出码：${result.status ?? "未知"}`);
     }
+  } else {
+    console.log(`非 macOS 平台：跳过 app-icon.png 生成（${dstPath} 保持现有文件不变）`);
   }
-  writeFileSync(dstPath, PNG.sync.write(dst));
 }
 
 /**
  * 生成 ICNS：容器格式为 "icns" + 总长度 + 若干 (OSType + 长度 + PNG 数据) 条目。
  * 现代 macOS 支持 PNG 载荷的条目类型。
  * 注意：此手工拼接方案在 Launchpad/Dock 上渲染不完整（只显示局部），
- * 仅作为非 macOS 平台的兜底；macOS 上必须使用系统 iconutil。
+ * 仅作历史参考，当前代码已不再调用（非 macOS 平台直接跳过 ICNS 生成）。
  */
 function buildIcns(entries) {
   const chunks = entries.map(({ type, data }) => {
@@ -233,16 +215,17 @@ writeFileSync(icoPath, ico);
 
 // 2.5) 渲染进程标题栏 logo（64px，随系统图标同步）
 // 注意：无头浏览器在极小窗口（如 64x64）下截图不可靠，会生成全透明 PNG，
-// 因此这里改为从已渲染的 1024px 主图缩放得到，保证内容正确。
-const rendererAssetsDir = join(currentDir, "..", "src", "renderer", "src", "assets");
-mkdirSync(rendererAssetsDir, { recursive: true });
-downscalePng(pngPath, join(rendererAssetsDir, "app-icon.png"), 64);
+// 因此 macOS 上用 sips 从已渲染的 1024px 主图缩放，保证内容正确。
+makeRendererAppIcon();
 
-// 3) ICNS（macOS）：优先使用 Apple 官方 iconutil，仅在非 macOS 上回退到手工拼接
+// 3) ICNS（macOS）：仅在 macOS 上生成，使用 Apple 官方 iconutil（sips + iconutil）。
+// 其他平台（Windows/Linux）没有 iconutil，且手工拼接的 ICNS 在 Launchpad/Dock 上
+// 渲染不完整（启动台只显示一角、程序坞显示 Electron 默认图标），会污染仓库图标。
+// 因此非 macOS 平台跳过 ICNS 生成，保留仓库中已有的有效 icon.icns。
 if (process.platform === "darwin") {
   buildIcnsWithIconutil(pngPath, icnsPath);
 } else {
-  writeFileSync(icnsPath, buildIcns(icnsEntries));
+  console.log(`非 macOS 平台：跳过 ICNS 生成（${icnsPath} 保持现有文件不变）`);
 }
 
 console.log(`图标源文件：${svgPath}`);
