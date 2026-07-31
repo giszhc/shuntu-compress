@@ -28,6 +28,7 @@ import type {
   TaskSummary
 } from "../../shared/ipc-types";
 import type { VipsService } from "./vipsService";
+import { logCrash } from "../crash-logger";
 
 export interface ProcessServiceEvents {
   onScanProgress: (event: ScanProgressEvent) => void;
@@ -188,7 +189,10 @@ export class ProcessService {
 
       const summary = summarize(results, startedAt, request);
       this.events.onTaskFinished({ taskId, summary, results });
-    })();
+    })().catch(err => {
+      // 队列结构性异常（非单项失败）兜底记录，避免未捕获 rejection 杀掉主进程
+      logCrash("processTask", err);
+    });
 
     return { taskId };
   }

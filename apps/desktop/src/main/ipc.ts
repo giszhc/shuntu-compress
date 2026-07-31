@@ -8,6 +8,7 @@ import type { ProcessService } from "./services/processService";
 import type { SettingsService } from "./services/settingsService";
 import type { ThumbnailService } from "./services/thumbnailService";
 import type { VipsService } from "./services/vipsService";
+import { logCrash } from "./crash-logger";
 import {
   assertAbsolutePath,
   validateScanRequest,
@@ -27,8 +28,15 @@ export interface Services {
 
 export function sendToAll(channel: string, payload: unknown): void {
   for (const window of BrowserWindow.getAllWindows()) {
-    if (!window.isDestroyed()) {
-      window.webContents.send(channel, payload);
+    if (window.isDestroyed()) continue;
+    try {
+      // 单窗口发送失败（窗口正在销毁、payload 不可序列化等）不应中断主进程，
+      // 否则会冒泡成未捕获 rejection / 异常导致整个程序闪退。
+      if (!window.webContents.isDestroyed()) {
+        window.webContents.send(channel, payload);
+      }
+    } catch (err) {
+      logCrash("sendToAll", `${channel}: ${err instanceof Error ? err.message : String(err)}`);
     }
   }
 }
@@ -96,6 +104,12 @@ export function registerIpc(services: Services): void {
   ipcMain.handle(IPC.windowIsMaximized, event => {
     const window = BrowserWindow.fromWebContents(event.sender);
     return window?.isMaximized() ?? false;
+  });
+
+  // 渲染进程把全局错误转发到主进程日志（打包后无 console 输出）
+  ipcMain.handle(IPC.appLog, (_event, raw) => {
+    logCrash("renderer", typeof raw === "string" ? raw : JSON.stringify(raw));
+    return true;
   });
 
   // ---- 系统主题变化推送 ----

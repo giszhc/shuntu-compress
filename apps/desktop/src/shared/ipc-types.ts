@@ -147,6 +147,8 @@ export interface AppApi {
   getSystemTheme(): Promise<ResolvedTheme>;
   windowControl(request: WindowControlRequest): Promise<void>;
   isMaximized(): Promise<boolean>;
+  /** 渲染进程把全局错误/未处理拒绝转发到主进程日志（crash.log） */
+  log(message: string): Promise<boolean>;
   // 事件订阅（返回取消订阅函数）
   onScanProgress(cb: (e: ScanProgressEvent) => void): () => void;
   onTaskProgress(cb: (e: TaskProgressEvent) => void): () => void;
@@ -179,7 +181,8 @@ export const IPC = {
   appGetVersion: "app:getVersion",
   appGetSystemTheme: "app:getSystemTheme",
   windowControl: "window:control",
-  windowIsMaximized: "window:isMaximized"
+  windowIsMaximized: "window:isMaximized",
+  appLog: "app:log"
 } as const;
 
 /** IPC 事件 channel 常量（主进程 → 渲染进程推送） */

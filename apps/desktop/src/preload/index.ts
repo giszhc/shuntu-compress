@@ -47,6 +47,7 @@ const api: AppApi = {
   windowControl: (request: WindowControlRequest) =>
     ipcRenderer.invoke(IPC.windowControl, request),
   isMaximized: () => ipcRenderer.invoke(IPC.windowIsMaximized),
+  log: (message: string) => ipcRenderer.invoke(IPC.appLog, message),
 
   onScanProgress: cb => subscribe(IPC_EVENTS.scanProgress, cb),
   onTaskProgress: cb => subscribe(IPC_EVENTS.taskProgress, cb),
