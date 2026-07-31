@@ -79,6 +79,16 @@ function showMainWindow(): void {
   mainWindow.focus();
 }
 
+function resolveWindowIconPath(): string | undefined {
+  // Windows 标题栏左上角图标：必须在 BrowserWindow 构造时显式设置，
+  // 否则 frameless/hidden titlebar 窗口会显示默认空白图标。
+  if (process.platform !== "win32") return undefined;
+  if (app.isPackaged) {
+    return path.join(process.resourcesPath, "icon.ico");
+  }
+  return path.join(app.getAppPath(), "build", "icon.ico");
+}
+
 function resolveTrayIconPath(): string {
   // macOS 菜单栏（Status Item / Tray）需要小尺寸 PNG，不能用 ICNS
   // Electron nativeImage.createFromPath 对 ICNS 支持有限，且菜单栏图标应 ≤ 22px
@@ -125,6 +135,8 @@ function createTray(): void {
 function createWindow(): void {
   const settings = settingsService.get();
 
+  const windowIconPath = resolveWindowIconPath();
+
   mainWindow = new BrowserWindow({
     width: 1120,
     height: 760,
@@ -133,6 +145,8 @@ function createWindow(): void {
     show: false,
     frame: false,
     titleBarStyle: "hidden",
+    // Windows：显式设置左上角标题栏图标（frameless 窗口不会自动使用可执行文件图标）
+    ...(windowIconPath ? { icon: nativeImage.createFromPath(windowIconPath) } : {}),
     // macOS：让系统交通灯按钮与 44px 标题栏垂直居中对齐
     ...(process.platform === "darwin"
       ? { trafficLightPosition: TRAFFIC_LIGHT_POSITION }
