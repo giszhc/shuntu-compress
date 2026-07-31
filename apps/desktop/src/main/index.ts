@@ -11,15 +11,11 @@ import { ProcessService } from "./services/processService";
 import { SettingsService } from "./services/settingsService";
 import { ThumbnailService } from "./services/thumbnailService";
 import { VipsService } from "./services/vipsService";
-import { logCrash } from "./crash-logger";
+import { installCrashHandlers, logInfo } from "./crash-logger";
 
-// 进程级崩溃兜底：未捕获异常 / 未处理拒绝只记录不退出，防止事件发送等
-// 非关键错误误杀主进程导致“闪退”；渲染进程崩溃也写入日志便于排查。
-process.on("uncaughtException", err => logCrash("uncaughtException", err));
-process.on("unhandledRejection", reason => logCrash("unhandledRejection", reason));
-app.on("render-process-gone", (_event, _webContents, details) =>
-  logCrash("render-process-gone", `reason=${details.reason}`)
-);
+// 进程级崩溃兜底 + 全量调试日志（未捕获异常 / 未处理拒绝 / 渲染进程崩溃 /
+// 子进程消失 / 进程退出）。只记录不退出，防止非关键错误误杀主进程导致“闪退”。
+installCrashHandlers();
 
 // e2e/测试注入：--force-theme=light|dark 覆盖系统主题；--vips-cache-root=<dir> 注入缓存目录；
 // --user-data-dir=<dir> 隔离用户数据（必须在单实例锁之前设置）
@@ -171,6 +167,18 @@ function createWindow(): void {
   });
 
   mainWindow.once("ready-to-show", () => mainWindow?.show());
+
+  // 窗口/渲染层异常轨迹：便于区分“主进程退出”与“渲染进程崩溃”
+  mainWindow.webContents.on("did-fail-load", (_e, code, desc) =>
+    logInfo("did-fail-load", `code=${code} desc=${desc}`)
+  );
+  mainWindow.webContents.on("unresponsive", () =>
+    logInfo("webContents", "unresponsive")
+  );
+  mainWindow.webContents.on("destroyed", () =>
+    logInfo("webContents", "destroyed")
+  );
+  mainWindow.on("close", () => logInfo("window", "close"));
 
   // macOS：退出全屏后系统会把交通灯位置重置为默认值，需要重新应用居中位置
   if (process.platform === "darwin") {

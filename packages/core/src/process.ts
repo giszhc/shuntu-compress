@@ -20,7 +20,13 @@ export function buildVipsSteps(
   input: string,
   output: string,
   temporary: string,
-  options: ProcessOptions
+  options: ProcessOptions,
+  /**
+   * vips 实际写入的最终产物路径。默认与 output 相同；
+   * processImage 会传入一个不带图片扩展名的临时路径，写完后由本进程改名落盘。
+   * 详见 makeFinalTemporaryPath 的说明。
+   */
+  finalTarget: string = output
 ): VipsStep[] | null {
   const outExt = path.extname(output).toLowerCase();
   const inputExt = path.extname(input).toLowerCase();
@@ -45,7 +51,7 @@ export function buildVipsSteps(
       args: [
         "jpegsave",
         temporary,
-        output,
+        finalTarget,
         `--Q=${options.quality}`,
         "--strip",
         "--optimize-coding"
@@ -55,7 +61,7 @@ export function buildVipsSteps(
     // PNG 是无损格式：quality < 100 时启用调色板量化（palette），对色彩较少的
     // 图像（截图 / 图标 / 插画）有效；照片类图像量化后体积基本不变甚至变差，
     // 由 processImage 的“重新编码后未变小则保留原图”兜底，避免画质劣化却无收益。
-    const pngArgs = ["pngsave", temporary, output];
+    const pngArgs = ["pngsave", temporary, finalTarget];
     if (options.quality < 100) {
       pngArgs.push("--palette", `--Q=${options.quality}`);
     } else {
@@ -102,6 +108,39 @@ function makeTemporaryPath(output: string): string {
   return `${output}.v-${process.pid}-${crypto.randomBytes(4).toString("hex")}.png`;
 }
 
+/**
+ * vips 最终产物的落地临时路径（不带图片扩展名）。
+ *
+ * 背景：部分国产安全软件（如 360 主动防御）会拦截「未签名进程直接创建 .jpg 文件」，
+ * 且拦截是静默的——vips.exe 退出码仍为 0，但文件根本没落盘，后续 stat 报 ENOENT。
+ * 实测同一条 jpegsave 写 .jpeg / .bin 都正常，只有 .jpg 被拦。
+ *
+ * 规避方式：让 vips 写到一个中性扩展名（.tmp）的文件，再由本进程 rename 成目标
+ * 文件名。jpegsave / pngsave 都是显式指定编码器的算子，不依赖输出扩展名推断格式。
+ */
+function makeFinalTemporaryPath(output: string): string {
+  return `${output}.vout-${process.pid}-${crypto.randomBytes(4).toString("hex")}.tmp`;
+}
+
+/** 把 vips 产物移动到最终路径；跨设备等异常场景回退为复制 */
+async function commitOutput(finalTemporary: string, output: string): Promise<void> {
+  try {
+    await fs.promises.rename(finalTemporary, output);
+  } catch {
+    await fs.promises.copyFile(finalTemporary, output);
+    fs.rmSync(finalTemporary, { force: true });
+  }
+}
+
+function commitOutputSync(finalTemporary: string, output: string): void {
+  try {
+    fs.renameSync(finalTemporary, output);
+  } catch {
+    fs.copyFileSync(finalTemporary, output);
+    fs.rmSync(finalTemporary, { force: true });
+  }
+}
+
 function assertNotOverwritingInput(input: string, output: string): void {
   if (path.resolve(input) === path.resolve(output)) {
     throw new ConfigError("输出路径与原图相同，已阻止覆盖原图");
@@ -116,7 +155,8 @@ export async function processImage(
 ): Promise<void> {
   assertNotOverwritingInput(input, output);
   const temporary = makeTemporaryPath(output);
-  const steps = buildVipsSteps(input, output, temporary, options);
+  const finalTemporary = makeFinalTemporaryPath(output);
+  const steps = buildVipsSteps(input, output, temporary, options, finalTemporary);
 
   if (steps === null) {
     await fs.promises.copyFile(input, output);
@@ -137,8 +177,17 @@ export async function processImage(
         );
       }
     }
+    if (!fs.existsSync(finalTemporary)) {
+      // 退出码为 0 却没有产物：多半是安全软件静默拦截了文件创建
+      throw new VipsError(
+        "压缩引擎已执行完成但未生成输出文件。这通常是安全软件（如 360 安全卫士）" +
+          "拦截了本程序创建文件，请将本程序加入信任名单后重试。"
+      );
+    }
+    await commitOutput(finalTemporary, output);
   } finally {
     fs.rmSync(temporary, { force: true });
+    fs.rmSync(finalTemporary, { force: true });
   }
 
   // 原尺寸 + 同格式：重新编码后未变小则保留原图，避免体积膨胀或画质劣化
@@ -154,7 +203,8 @@ export function processImageSync(
   options: Omit<ProcessImageOptions, "signal">
 ): void {
   const temporary = makeTemporaryPath(output);
-  const steps = buildVipsSteps(input, output, temporary, options);
+  const finalTemporary = makeFinalTemporaryPath(output);
+  const steps = buildVipsSteps(input, output, temporary, options, finalTemporary);
 
   if (steps === null) {
     fs.copyFileSync(input, output);
@@ -166,8 +216,16 @@ export function processImageSync(
     for (const step of steps) {
       spawnSyncChecked(options.vipsCommand, step.args, env);
     }
+    if (!fs.existsSync(finalTemporary)) {
+      throw new VipsError(
+        "压缩引擎已执行完成但未生成输出文件。这通常是安全软件（如 360 安全卫士）" +
+          "拦截了本程序创建文件，请将本程序加入信任名单后重试。"
+      );
+    }
+    commitOutputSync(finalTemporary, output);
   } finally {
     fs.rmSync(temporary, { force: true });
+    fs.rmSync(finalTemporary, { force: true });
   }
 
   // 原尺寸 + 同格式：重新编码后未变小则保留原图，避免体积膨胀或画质劣化

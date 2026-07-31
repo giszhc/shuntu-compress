@@ -28,7 +28,7 @@ import type {
   TaskSummary
 } from "../../shared/ipc-types";
 import type { VipsService } from "./vipsService";
-import { logCrash } from "../crash-logger";
+import { logCrash, logInfo } from "../crash-logger";
 
 export interface ProcessServiceEvents {
   onScanProgress: (event: ScanProgressEvent) => void;
@@ -80,10 +80,15 @@ export class ProcessService {
    * 返回 taskId；任务异步执行，完成后推 task:finished。
    */
   async start(request: TaskStartRequest): Promise<{ taskId: string }> {
+    logInfo(
+      "task",
+      `start 请求：files=${request.entries.length} mode=${request.mode} concurrency=${request.concurrency} outputDir=${request.outputDir ?? "(源目录/compressed)"} options=${JSON.stringify(request.options)}`
+    );
     if (this.running) {
       throw new ConfigError("已有任务进行中，请先取消或等待完成");
     }
     const vipsCommand = await this.vips.ensureReady();
+    logInfo("task", `vips 命令：${vipsCommand}`);
 
     const taskId = `task-${++this.taskCounter}`;
     const startedAt = Date.now();
@@ -100,6 +105,9 @@ export class ProcessService {
       dedup: true
     }));
     const outputPlan = planOutputs(planRequests);
+    for (const [input, output] of outputPlan) {
+      logInfo("task", `输出规划：${input} -> ${output}`);
+    }
 
     const queue = new TaskQueue({ concurrency: request.concurrency });
     this.running = { taskId, queue };
@@ -125,13 +133,17 @@ export class ProcessService {
               };
             }
             try {
+              logInfo("item", `开始处理：${entry.absolutePath}`);
               await fs.promises.mkdir(path.dirname(output), { recursive: true });
+              logInfo("item", `输出目录已就绪：${path.dirname(output)}`);
               await processImage(entry.absolutePath, output, {
                 ...request.options,
                 vipsCommand,
                 signal
               });
+              logInfo("item", `vips 处理完成：${output}`);
               const stat = await fs.promises.stat(output);
+              logInfo("item", `产物大小：${stat.size} 字节`);
               return {
                 input: entry.absolutePath,
                 output,
@@ -149,6 +161,7 @@ export class ProcessService {
                   compressedSize: 0
                 };
               }
+              logCrash("item", error);
               return {
                 input: entry.absolutePath,
                 output,
@@ -170,7 +183,15 @@ export class ProcessService {
               });
             },
             onItemEnd: (result, index) => {
-              this.events.onTaskItemDone({ taskId, index, result });
+              logInfo(
+                "item",
+                `完成 #${index}: status=${result.status} ${result.originalSize}B -> ${result.compressedSize}B ${result.error ? `error=${result.error}` : ""}`
+              );
+              try {
+                this.events.onTaskItemDone({ taskId, index, result });
+              } catch (err) {
+                logCrash("onItemEnd", err);
+              }
             },
             onProgress: done => {
               this.events.onTaskProgress({
@@ -188,7 +209,9 @@ export class ProcessService {
       }
 
       const summary = summarize(results, startedAt, request);
+      logInfo("task", `任务结束：${JSON.stringify(summary)}`);
       this.events.onTaskFinished({ taskId, summary, results });
+      logInfo("task", "finished 事件已推送");
     })().catch(err => {
       // 队列结构性异常（非单项失败）兜底记录，避免未捕获 rejection 杀掉主进程
       logCrash("processTask", err);
