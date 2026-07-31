@@ -25,3 +25,7 @@ Thumbs.db
 
 # 本地工作数据
 .workbuddy/
+
+# 安装包（托管在 Gitee，不再入库 docs/）
+docs/*.exe
+docs/*.dmg
