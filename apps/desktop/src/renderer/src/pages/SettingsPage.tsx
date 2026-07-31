@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { useSettingsStore } from "../stores/settingsStore";
 import { useUiStore } from "../stores/uiStore";
+import { SegmentedControl } from "../components/SegmentedControl";
 import "../styles/settings.css";
 
 export function SettingsPage(): React.JSX.Element {
@@ -117,18 +118,12 @@ export function SettingsPage(): React.JSX.Element {
               <div className="desc">同时处理的图片数量（1~4）</div>
             </div>
             <div className="control">
-              <div className="segmented" style={{ minWidth: 160 }}>
-                {[1, 2, 3, 4].map(n => (
-                  <button
-                    key={n}
-                    type="button"
-                    className={settings.concurrency === n ? "active" : ""}
-                    onClick={() => patch({ concurrency: n })}
-                  >
-                    {n}
-                  </button>
-                ))}
-              </div>
+              <SegmentedControl
+                options={[1, 2, 3, 4].map(n => ({ label: String(n), value: n }))}
+                value={settings.concurrency}
+                onChange={v => patch({ concurrency: v })}
+                minWidth={160}
+              />
             </div>
           </div>
 
@@ -167,24 +162,16 @@ export function SettingsPage(): React.JSX.Element {
               <div className="desc">跟随系统或固定亮 / 暗色</div>
             </div>
             <div className="control">
-              <div className="segmented" style={{ minWidth: 260 }}>
-                {(
-                  [
-                    { label: "跟随系统", value: "system" },
-                    { label: "浅色", value: "light" },
-                    { label: "深色", value: "dark" }
-                  ] as const
-                ).map(opt => (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    className={settings.theme === opt.value ? "active" : ""}
-                    onClick={() => patch({ theme: opt.value })}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
+              <SegmentedControl
+                options={[
+                  { label: "跟随系统", value: "system" },
+                  { label: "浅色", value: "light" },
+                  { label: "深色", value: "dark" }
+                ]}
+                value={settings.theme}
+                onChange={v => patch({ theme: v })}
+                minWidth={260}
+              />
             </div>
           </div>
         </div>

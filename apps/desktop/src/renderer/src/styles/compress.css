@@ -408,7 +408,7 @@
   white-space: nowrap;
 }
 
-.compress-size-grid button:hover:not(:disabled) {
+.compress-size-grid button:hover:not(:disabled):not(.active) {
   background: var(--control-bg-hover);
 }
 
@@ -417,6 +417,11 @@
   color: var(--text-on-accent);
   font-weight: 600;
   box-shadow: 0 1px 3px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+/* 选中按钮 hover：保持蓝色基调（亮一档），不让灰色覆盖 */
+.compress-size-grid button.active:hover:not(:disabled) {
+  background: var(--accent-hover);
 }
 
 /* ---------- 控件：自定义尺寸输入（带 label + 单位） ---------- */
@@ -499,11 +504,17 @@
   background: var(--control-bg-hover);
 }
 
+/* 选中态与尺寸网格一致：蓝色实心 + 白字 */
 .compress-segmented button.active {
-  background: var(--surface-solid);
-  color: var(--text);
+  background: var(--accent);
+  color: var(--text-on-accent);
   font-weight: 600;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 1px 3px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+/* 选中按钮 hover：保持蓝色基调（亮一档） */
+.compress-segmented button.active:hover:not(:disabled) {
+  background: var(--accent-hover);
 }
 
 /* ---------- 开关行：图标 + 标题/副标题 + toggle ---------- */

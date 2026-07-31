@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { useSettingsStore } from "../stores/settingsStore";
 import { useTaskStore } from "../stores/taskStore";
+import { SegmentedControl } from "./SegmentedControl";
 import "../styles/compress.css";
 
 const SIZE_PRESETS: Array<{ label: string; value: number | null }> = [
@@ -177,25 +178,16 @@ export function ParamsPanel(): React.JSX.Element {
             <span className="compress-params-label">输出格式</span>
           </div>
           <div className="compress-params-card">
-            <div className="compress-segmented">
-              {(
-                [
-                  { label: "保持原格式", value: null },
-                  { label: "JPG", value: ".jpg" },
-                  { label: "PNG", value: ".png" }
-                ] as const
-              ).map(opt => (
-                <button
-                  key={opt.label}
-                  type="button"
-                  className={params.ext === opt.value ? "active" : ""}
-                  disabled={running}
-                  onClick={() => setParam("ext", opt.value)}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
+            <SegmentedControl
+              options={[
+                { label: "保持原格式", value: null },
+                { label: "JPG", value: ".jpg" },
+                { label: "PNG", value: ".png" }
+              ]}
+              value={params.ext}
+              onChange={v => setParam("ext", v)}
+              disabled={running}
+            />
           </div>
         </section>
 
@@ -253,19 +245,12 @@ export function ParamsPanel(): React.JSX.Element {
             <span className="compress-params-value">{params.concurrency}</span>
           </div>
           <div className="compress-params-card">
-            <div className="compress-segmented">
-              {[1, 2, 3, 4].map(n => (
-                <button
-                  key={n}
-                  type="button"
-                  className={params.concurrency === n ? "active" : ""}
-                  disabled={running}
-                  onClick={() => setParam("concurrency", n)}
-                >
-                  {n}
-                </button>
-              ))}
-            </div>
+            <SegmentedControl
+              options={[1, 2, 3, 4].map(n => ({ label: String(n), value: n }))}
+              value={params.concurrency}
+              onChange={v => setParam("concurrency", v)}
+              disabled={running}
+            />
           </div>
         </section>
 
