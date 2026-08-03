@@ -128,7 +128,7 @@ export function AboutPage(): React.JSX.Element {
                 <InfoRow
                   icon={<Mail size={16} />}
                   label="联系邮箱"
-                  value={<a href="mailto:giszhc@163.com">giszhc@163.com</a>}
+                  value={<a href="mailto:shuntool@163.com">shuntool@163.com</a>}
                   isLink
                 />
               </div>
