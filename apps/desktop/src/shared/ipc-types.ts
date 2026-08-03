@@ -118,6 +118,28 @@ export interface WindowControlRequest {
   action: "min" | "max" | "close";
 }
 
+/** 更新检查结果 */
+export interface UpdateCheckResult {
+  /** 是否有可用更新 */
+  hasUpdate: boolean;
+  /** 当前版本 */
+  currentVersion: string;
+  /** 最新版本（无更新时为当前版本） */
+  latestVersion: string;
+  /** 更新说明 */
+  notes?: string;
+  /** 安装包下载地址（raw 直链） */
+  downloadUrl?: string;
+}
+
+/** 更新流程状态（主进程 → 渲染进程推送） */
+export type UpdateStatusEvent =
+  | { phase: "checking" }
+  | { phase: "none"; currentVersion: string }
+  | { phase: "available"; currentVersion: string; latestVersion: string; notes?: string }
+  | { phase: "downloading"; received: number; total: number; percent: number }
+  | { phase: "error"; message: string };
+
 /** preload 暴露给渲染进程的完整 API 形状 */
 export interface AppApi {
   /** 宿主平台（同步）；渲染层据此做平台相关 UI（如 macOS 隐藏自绘窗口控件） */
@@ -149,6 +171,11 @@ export interface AppApi {
   isMaximized(): Promise<boolean>;
   /** 渲染进程把全局错误/未处理拒绝转发到主进程日志（crash.log） */
   log(message: string): Promise<boolean>;
+  // 更新
+  /** 检查更新（返回立即结果；后续状态经 onUpdateStatus 推送） */
+  checkUpdate(): Promise<UpdateCheckResult>;
+  /** 下载并安装更新（内部走静默安装后退出） */
+  installUpdate(): Promise<void>;
   // 事件订阅（返回取消订阅函数）
   onScanProgress(cb: (e: ScanProgressEvent) => void): () => void;
   onTaskProgress(cb: (e: TaskProgressEvent) => void): () => void;
@@ -159,6 +186,7 @@ export interface AppApi {
   onSystemTheme(cb: (theme: ResolvedTheme) => void): () => void;
   onMaximizeChange(cb: (maximized: boolean) => void): () => void;
   onFilesDropped(cb: (paths: string[]) => void): () => void;
+  onUpdateStatus(cb: (e: UpdateStatusEvent) => void): () => void;
 }
 
 /** IPC channel 常量（invoke） */
@@ -182,7 +210,9 @@ export const IPC = {
   appGetSystemTheme: "app:getSystemTheme",
   windowControl: "window:control",
   windowIsMaximized: "window:isMaximized",
-  appLog: "app:log"
+  appLog: "app:log",
+  appCheckUpdate: "app:checkUpdate",
+  appInstallUpdate: "app:installUpdate"
 } as const;
 
 /** IPC 事件 channel 常量（主进程 → 渲染进程推送） */
@@ -195,5 +225,6 @@ export const IPC_EVENTS = {
   installError: "vips:install:error",
   systemTheme: "theme:system",
   maximizeChange: "window:maximizeChange",
-  filesDropped: "files:dropped"
+  filesDropped: "files:dropped",
+  updateStatus: "update:status"
 } as const;

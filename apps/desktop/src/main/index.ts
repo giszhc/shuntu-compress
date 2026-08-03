@@ -10,6 +10,7 @@ import { DialogService } from "./services/dialogService";
 import { ProcessService } from "./services/processService";
 import { SettingsService } from "./services/settingsService";
 import { ThumbnailService } from "./services/thumbnailService";
+import { UpdateService } from "./services/updateService";
 import { VipsService } from "./services/vipsService";
 import { installCrashHandlers, logInfo } from "./crash-logger";
 
@@ -77,6 +78,9 @@ const processService = new ProcessService(vipsService, {
   onTaskItemDone: event => sendToAll(IPC_EVENTS.taskItemDone, event),
   onTaskFinished: event => sendToAll(IPC_EVENTS.taskFinished, event)
 });
+const updateService = UpdateService.create({
+  onStatus: event => sendToAll(IPC_EVENTS.updateStatus, event)
+});
 
 function resolveThemeBackground(settings: Settings): string {
   const dark =
@@ -128,20 +132,35 @@ function createTray(): void {
   const image = nativeImage.createFromPath(resolveTrayIconPath());
   tray = new Tray(image);
   tray.setToolTip("瞬图压缩");
-  // 上下文菜单（显示窗口 / 退出），与 Windows 托盘完全一致
-  tray.setContextMenu(
-    Menu.buildFromTemplate([
-      { label: "显示窗口", click: showMainWindow },
-      { type: "separator" },
-      {
-        label: "退出",
-        click: () => {
-          isQuitting = true;
-          app.quit();
+  const rebuildMenu = () => {
+    if (!tray) return;
+    tray.setContextMenu(
+      Menu.buildFromTemplate([
+        {
+          label: `当前版本 v${app.getVersion()}`,
+          enabled: false
+        },
+        { type: "separator" },
+        { label: "显示窗口", click: showMainWindow },
+        {
+          label: "检查更新…",
+          click: () => {
+            showMainWindow();
+            void updateService.check();
+          }
+        },
+        { type: "separator" },
+        {
+          label: "退出",
+          click: () => {
+            isQuitting = true;
+            app.quit();
+          }
         }
-      }
-    ])
-  );
+      ])
+    );
+  };
+  rebuildMenu();
   // Windows：左键单击直接显示主窗口；macOS：左键弹出上方菜单（行为同 Windows 托盘）
   if (process.platform === "win32") {
     tray.on("click", showMainWindow);
@@ -257,10 +276,17 @@ app.whenReady().then(() => {
     process: processService,
     thumbnail: thumbnailService,
     dialog: dialogService,
-    settings: settingsService
+    settings: settingsService,
+    update: updateService
   });
   createWindow();
   if (trayEnabled) createTray();
+
+  // 启动后静默检查更新：有可用更新时经 update:status 推送 available 事件，
+  // 渲染层弹窗提示；无更新 / 检查失败不打扰用户。
+  setTimeout(() => {
+    void updateService.check();
+  }, 5000);
 
   app.on("activate", () => {
     // macOS：点击 Dock 图标时恢复窗口（未隐藏 Dock 时生效）

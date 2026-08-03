@@ -11,15 +11,19 @@ import {
   MessageCircle,
   MessagesSquare,
   Monitor,
+  RefreshCw,
   Shield,
   Tag
 } from "lucide-react";
 import appIcon from "../../../../build/icon.svg";
+import { useUiStore } from "../stores/uiStore";
 import "../styles/about.css";
 import "../styles/settings.css";
 
 export function AboutPage(): React.JSX.Element {
   const [version, setVersion] = useState("");
+  const toast = useUiStore(s => s.toast);
+  const [checking, setChecking] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -30,6 +34,23 @@ export function AboutPage(): React.JSX.Element {
       alive = false;
     };
   }, []);
+
+  const checkUpdate = () => {
+    setChecking(true);
+    toast("正在检查更新…", "info");
+    void window.app
+      .checkUpdate()
+      .then(result => {
+        if (!result.hasUpdate) {
+          toast(`当前已是最新版本 v${result.currentVersion}`, "success");
+        }
+        // hasUpdate 时主进程已推送 available 事件，UpdateModal 会自动弹出
+      })
+      .catch((err: unknown) => {
+        toast(err instanceof Error ? err.message : "检查更新失败", "error");
+      })
+      .finally(() => setChecking(false));
+  };
 
   return (
     <div className="page">
@@ -44,10 +65,19 @@ export function AboutPage(): React.JSX.Element {
             <img className="about-app-icon" src={appIcon} alt="瞬图压缩" />
             <h2 className="about-app-name">瞬图压缩</h2>
             <div className="about-app-version">v{version}</div>
+            <button
+              type="button"
+              className="btn btn-primary about-check-update"
+              disabled={checking}
+              onClick={checkUpdate}
+            >
+              <RefreshCw size={14} className={checking ? "spin" : ""} />
+              {checking ? "正在检查…" : "检查更新"}
+            </button>
             <p className="about-app-desc">
               高效的本地图片压缩工具
               <br />
-              支持 JPG / PNG / WebP / GIF / TIFF / BMP 批量压缩，等比缩放与格式转换
+              支持 JPG / PNG / WebP / GIF / TIFF / BMP / SVG 批量压缩，等比缩放与格式转换
             </p>
           </div>
 

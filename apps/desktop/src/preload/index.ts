@@ -49,6 +49,9 @@ const api: AppApi = {
   isMaximized: () => ipcRenderer.invoke(IPC.windowIsMaximized),
   log: (message: string) => ipcRenderer.invoke(IPC.appLog, message),
 
+  checkUpdate: () => ipcRenderer.invoke(IPC.appCheckUpdate),
+  installUpdate: () => ipcRenderer.invoke(IPC.appInstallUpdate),
+
   onScanProgress: cb => subscribe(IPC_EVENTS.scanProgress, cb),
   onTaskProgress: cb => subscribe(IPC_EVENTS.taskProgress, cb),
   onTaskItemDone: cb => subscribe(IPC_EVENTS.taskItemDone, cb),
@@ -57,7 +60,8 @@ const api: AppApi = {
   onInstallError: cb => subscribe(IPC_EVENTS.installError, cb),
   onSystemTheme: cb => subscribe(IPC_EVENTS.systemTheme, cb),
   onMaximizeChange: cb => subscribe(IPC_EVENTS.maximizeChange, cb),
-  onFilesDropped: cb => subscribe(IPC_EVENTS.filesDropped, cb)
+  onFilesDropped: cb => subscribe(IPC_EVENTS.filesDropped, cb),
+  onUpdateStatus: cb => subscribe(IPC_EVENTS.updateStatus, cb)
 };
 
 contextBridge.exposeInMainWorld("app", api);

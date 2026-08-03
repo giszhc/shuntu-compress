@@ -943,6 +943,54 @@ input[type="range"]:disabled::-webkit-slider-thumb {
   text-overflow: ellipsis;
 }
 
+/* ---------- 更新弹窗 ---------- */
+.update-info {
+  margin-top: 10px;
+  background: var(--control-bg);
+  border-radius: 10px;
+  padding: 14px;
+}
+
+.update-versions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.update-ver-old {
+  color: var(--text-tertiary);
+  text-decoration: line-through;
+}
+
+.update-arrow {
+  color: var(--text-tertiary);
+}
+
+.update-ver-new {
+  color: var(--accent);
+  font-size: 18px;
+}
+
+.update-notes {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--divider);
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.7;
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.update-hint {
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
 /* ---------- 设置页 / 关于页 ---------- */
 .page {
   flex: 1;

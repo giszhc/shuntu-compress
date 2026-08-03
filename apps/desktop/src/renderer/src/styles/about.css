@@ -56,6 +56,28 @@
   border-radius: 20px;
 }
 
+/* 左侧「检查更新」按钮（渐变底上用白色半透明按钮） */
+.about-check-update {
+  background: rgba(255, 255, 255, 0.94);
+  color: var(--accent);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+}
+.about-check-update:hover {
+  background: #fff;
+}
+.about-check-update:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+.about-check-update .spin {
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .about-app-desc {
   font-size: 14px;
   color: rgba(255, 255, 255, 0.85);

@@ -7,6 +7,7 @@ import type { DialogService } from "./services/dialogService";
 import type { ProcessService } from "./services/processService";
 import type { SettingsService } from "./services/settingsService";
 import type { ThumbnailService } from "./services/thumbnailService";
+import type { UpdateService } from "./services/updateService";
 import type { VipsService } from "./services/vipsService";
 import { logCrash } from "./crash-logger";
 import {
@@ -24,6 +25,7 @@ export interface Services {
   thumbnail: ThumbnailService;
   dialog: DialogService;
   settings: SettingsService;
+  update: UpdateService;
 }
 
 export function sendToAll(channel: string, payload: unknown): void {
@@ -91,6 +93,8 @@ export function registerIpc(services: Services): void {
   ipcMain.handle(IPC.appGetSystemTheme, () =>
     nativeTheme.shouldUseDarkColors ? "dark" : "light"
   );
+  ipcMain.handle(IPC.appCheckUpdate, () => services.update.check());
+  ipcMain.handle(IPC.appInstallUpdate, () => services.update.install());
   ipcMain.handle(IPC.windowControl, (event, raw) => {
     const { action } = validateWindowControl(raw);
     const window = BrowserWindow.fromWebContents(event.sender);

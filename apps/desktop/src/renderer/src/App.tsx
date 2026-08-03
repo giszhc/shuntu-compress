@@ -8,6 +8,7 @@ import { ParamsPanel } from "./components/ParamsPanel";
 import { ResultPanel } from "./components/ResultPanel";
 import { Titlebar } from "./components/Titlebar";
 import { Toasts } from "./components/Toasts";
+import { UpdateModal } from "./components/UpdateModal";
 import { VipsInstallModal } from "./components/VipsInstallModal";
 import { AboutPage } from "./pages/AboutPage";
 import { SettingsPage } from "./pages/SettingsPage";
@@ -74,6 +75,9 @@ export function App(): React.JSX.Element {
       }),
       window.app.onFilesDropped(paths => {
         void useFileStore.getState().addPaths(paths);
+      }),
+      window.app.onUpdateStatus(e => {
+        useUiStore.getState().onUpdateStatus(e);
       })
     ];
 
@@ -122,6 +126,7 @@ export function App(): React.JSX.Element {
       {page === "main" && <ActionBar />}
       <ResultPanel />
       <VipsInstallModal />
+      <UpdateModal />
       <Toasts />
     </div>
   );

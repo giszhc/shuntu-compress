@@ -103,6 +103,29 @@ for (const p of toPublish) {
   log(`已拷贝 ${p.src} → ${GITEE_SUBDIR}/${p.dst}`);
 }
 
+// ---- 3.5 生成版本文件 latest.json（应用内自动更新使用） ----
+// 结构：{ version, notes, url }；版本号取自 Windows 安装包文件名（如 1.0.0）。
+// url 为 Windows 安装包 raw 直链，供 UpdateService 自动下载。
+const versionMatch = winArtifact
+  ? /setup-([\d.]+)\.exe$/.exec(winArtifact)
+  : null;
+const latestVersion = versionMatch ? versionMatch[1] : null;
+const latestJsonPath = path.join(destDir, 'latest.json');
+if (latestVersion) {
+  const latestJson = {
+    version: latestVersion,
+    notes: `瞬图压缩 v${latestVersion} 更新`,
+    url: `https://gitee.com/giszhc/application-software/raw/main/${encodeURIComponent(GITEE_SUBDIR)}/shuntu-desktop.exe`
+  };
+  fs.writeFileSync(latestJsonPath, JSON.stringify(latestJson, null, 2) + '\n', 'utf8');
+  log(`已生成版本文件 latest.json → v${latestVersion}`);
+} else if (fs.existsSync(latestJsonPath)) {
+  // 无 Windows 安装包时保留既有版本文件（避免破坏自动更新源）
+  log('未找到 Windows 安装包，保留既有 latest.json');
+} else {
+  log('未找到 Windows 安装包，跳过 latest.json 生成');
+}
+
 // ---- 4. 提交并推送 ----
 // 仅暂存安装包子目录，不影响仓库其他内容
 run(`git -C "${GITEE_LOCAL_DIR}" add "${GITEE_SUBDIR}"`);
