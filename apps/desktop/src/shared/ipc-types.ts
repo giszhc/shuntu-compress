@@ -118,6 +118,22 @@ export interface WindowControlRequest {
   action: "min" | "max" | "close";
 }
 
+/** 用户反馈（渲染层 → 主进程 → SMTP 邮件） */
+export interface FeedbackRequest {
+  /** 称呼 */
+  name: string;
+  /** 联系邮箱 */
+  email: string;
+  /** 反馈内容，≤ 500 字 */
+  content: string;
+}
+
+/** 反馈发送结果 */
+export interface FeedbackResult {
+  ok: boolean;
+  message: string;
+}
+
 /** 更新检查结果 */
 export interface UpdateCheckResult {
   /** 是否有可用更新 */
@@ -178,6 +194,9 @@ export interface AppApi {
   installUpdate(): Promise<void>;
   /** 用系统浏览器打开外部链接（官网等） */
   openExternal(url: string): Promise<void>;
+  // 用户反馈
+  /** 提交用户反馈（经 163 SMTP 直接发送到 shuntool@163.com） */
+  sendFeedback(request: FeedbackRequest): Promise<FeedbackResult>;
   // 事件订阅（返回取消订阅函数）
   onScanProgress(cb: (e: ScanProgressEvent) => void): () => void;
   onTaskProgress(cb: (e: TaskProgressEvent) => void): () => void;
@@ -215,7 +234,8 @@ export const IPC = {
   appLog: "app:log",
   appCheckUpdate: "app:checkUpdate",
   appInstallUpdate: "app:installUpdate",
-  appOpenExternal: "app:openExternal"
+  appOpenExternal: "app:openExternal",
+  feedbackSend: "feedback:send"
 } as const;
 
 /** IPC 事件 channel 常量（主进程 → 渲染进程推送） */

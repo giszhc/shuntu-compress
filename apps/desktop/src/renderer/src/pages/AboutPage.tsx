@@ -10,6 +10,7 @@ import {
   Lock,
   Mail,
   MessageCircle,
+  MessageSquareText,
   MessagesSquare,
   Monitor,
   RefreshCw,
@@ -17,6 +18,7 @@ import {
   Tag
 } from "lucide-react";
 import appIcon from "../../../../build/icon.svg";
+import { FeedbackForm } from "../components/FeedbackForm";
 import { useUiStore } from "../stores/uiStore";
 import "../styles/about.css";
 import "../styles/settings.css";
@@ -148,6 +150,17 @@ export function AboutPage(): React.JSX.Element {
                   }
                   isLink
                 />
+              </div>
+            </section>
+
+            {/* 用户反馈 */}
+            <section className="settings-group">
+              <h2 className="settings-group-title">
+                <span className="group-icon"><MessageSquareText size={16} /></span>
+                用户反馈
+              </h2>
+              <div className="settings-card about-card-pad">
+                <FeedbackForm />
               </div>
             </section>
 

@@ -12,9 +12,15 @@ directories:
 files:
   - out/**
   - package.json
+  - feedback.secret.json
   - "!**/*.map"
 
 asar: true
+
+# 运行时读取的静态资源：反馈邮件内联应用图标（dev 直接从 renderer assets 读取同一文件）
+extraResources:
+  - from: src/renderer/src/assets/app-icon.png
+    to: app-icon.png
 
 # 仅保留中英文语言包，移除其余 50+ 种语言的 .pak（减小安装包体积）
 electronLanguages:

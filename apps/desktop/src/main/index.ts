@@ -7,6 +7,7 @@ import { BrowserWindow, Menu, Tray, app, nativeImage, nativeTheme, shell } from 
 import { IPC_EVENTS, type Settings } from "../shared/ipc-types";
 import { registerIpc, sendToAll } from "./ipc";
 import { DialogService } from "./services/dialogService";
+import { FeedbackService } from "./services/feedbackService";
 import { ProcessService } from "./services/processService";
 import { SettingsService } from "./services/settingsService";
 import { ThumbnailService } from "./services/thumbnailService";
@@ -81,6 +82,7 @@ const processService = new ProcessService(vipsService, {
 const updateService = UpdateService.create({
   onStatus: event => sendToAll(IPC_EVENTS.updateStatus, event)
 });
+const feedbackService = new FeedbackService();
 
 function resolveThemeBackground(settings: Settings): string {
   const dark =
@@ -279,7 +281,8 @@ app.whenReady().then(() => {
     thumbnail: thumbnailService,
     dialog: dialogService,
     settings: settingsService,
-    update: updateService
+    update: updateService,
+    feedback: feedbackService
   });
   createWindow();
   if (trayEnabled) createTray();

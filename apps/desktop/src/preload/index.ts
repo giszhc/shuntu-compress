@@ -6,6 +6,7 @@ import {
   IPC,
   IPC_EVENTS,
   type AppApi,
+  type FeedbackRequest,
   type ScanRequest,
   type Settings,
   type TaskStartRequest,
@@ -52,6 +53,9 @@ const api: AppApi = {
   checkUpdate: () => ipcRenderer.invoke(IPC.appCheckUpdate),
   installUpdate: () => ipcRenderer.invoke(IPC.appInstallUpdate),
   openExternal: (url: string) => ipcRenderer.invoke(IPC.appOpenExternal, url),
+
+  sendFeedback: (request: FeedbackRequest) =>
+    ipcRenderer.invoke(IPC.feedbackSend, request),
 
   onScanProgress: cb => subscribe(IPC_EVENTS.scanProgress, cb),
   onTaskProgress: cb => subscribe(IPC_EVENTS.taskProgress, cb),

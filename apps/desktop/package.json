@@ -22,6 +22,7 @@
     "@resvg/resvg-js": "^2.6.2",
     "@tanstack/react-virtual": "3.14.8",
     "@types/node": "22.20.1",
+    "@types/nodemailer": "^8.0.1",
     "@types/react": "19.2.17",
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "5.1.4",
@@ -40,5 +41,8 @@
   "author": {
     "name": "giszhc",
     "email": "shuntool@163.com"
+  },
+  "dependencies": {
+    "nodemailer": "^9.0.3"
   }
 }

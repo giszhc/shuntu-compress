@@ -36,3 +36,8 @@ procs.txt
 # 安装包（托管在 Gitee，不再入库 docs/）
 docs/*.exe
 docs/*.dmg
+
+# SMTP 授权码（用户反馈功能，勿提交到公开仓库）
+apps/desktop/feedback.secret.json
+# 邮件模板预览（本地查看用）
+apps/desktop/feedback-preview.html

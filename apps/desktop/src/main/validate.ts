@@ -13,6 +13,7 @@ import {
 } from "@giszhc/vips-thumbnail-core";
 import type { SupportedExt } from "@giszhc/vips-thumbnail-core";
 import type {
+  FeedbackRequest,
   FileEntry,
   ProcessOptions,
   ScanRequest,
@@ -170,4 +171,30 @@ export function validateTaskId(raw: unknown): string {
     throw new ConfigError("任务标识无效");
   }
   return raw;
+}
+
+/** 简单邮箱格式校验（不做 RFC 全量校验，够用且不误伤） */
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const NAME_MAX = 30;
+const EMAIL_MAX = 100;
+const CONTENT_MAX = 500;
+
+export function validateFeedbackRequest(raw: unknown): FeedbackRequest {
+  const request = raw as Partial<FeedbackRequest> | null;
+  if (!request || typeof request !== "object" || Array.isArray(request)) {
+    throw new ConfigError("反馈数据无效");
+  }
+  const name = typeof request.name === "string" ? request.name.trim() : "";
+  const email = typeof request.email === "string" ? request.email.trim() : "";
+  const content = typeof request.content === "string" ? request.content.trim() : "";
+  if (!name) throw new ConfigError("请填写称呼");
+  if (name.length > NAME_MAX) throw new ConfigError(`称呼最多 ${NAME_MAX} 个字`);
+  if (!email) throw new ConfigError("请填写邮箱");
+  if (email.length > EMAIL_MAX) throw new ConfigError("邮箱地址过长");
+  if (!EMAIL_RE.test(email)) throw new ConfigError("邮箱格式不正确");
+  if (!content) throw new ConfigError("请填写反馈内容");
+  if (content.length > CONTENT_MAX) {
+    throw new ConfigError(`反馈内容最多 ${CONTENT_MAX} 字`);
+  }
+  return { name, email, content };
 }

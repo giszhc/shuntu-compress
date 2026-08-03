@@ -4,6 +4,7 @@
 import { describe, expect, it } from "vitest";
 import {
   assertAbsolutePath,
+  validateFeedbackRequest,
   validateScanRequest,
   validateSettingsPatch,
   validateTaskId,
@@ -108,7 +109,7 @@ describe("validateTaskStartRequest", () => {
     expect(() =>
       validateTaskStartRequest({
         ...good,
-        options: { quality: 85, size: null, ext: ".gif" }
+        options: { quality: 85, size: null, ext: ".avif" }
       })
     ).toThrow();
   });
@@ -169,5 +170,52 @@ describe("validateTaskId", () => {
 
   it.each(["", "task-", "abc", "task-1x", "../etc"])("拒绝 %s", id => {
     expect(() => validateTaskId(id)).toThrow();
+  });
+});
+
+describe("validateFeedbackRequest", () => {
+  const good = { name: "小李", email: "li@example.com", content: "很好用，希望能加一个深色图标。" };
+
+  it("接受合法反馈", () => {
+    expect(() => validateFeedbackRequest(good)).not.toThrow();
+  });
+
+  it("自动去除首尾空白", () => {
+    const result = validateFeedbackRequest({
+      name: " 小李 ",
+      email: " li@example.com ",
+      content: " 内容 "
+    });
+    expect(result).toEqual({ name: "小李", email: "li@example.com", content: "内容" });
+  });
+
+  it("拒绝缺少称呼 / 邮箱 / 内容", () => {
+    expect(() => validateFeedbackRequest({ ...good, name: "" })).toThrow();
+    expect(() => validateFeedbackRequest({ ...good, email: "" })).toThrow();
+    expect(() => validateFeedbackRequest({ ...good, content: "" })).toThrow();
+  });
+
+  it("拒绝非法邮箱", () => {
+    for (const email of ["abc", "a@b", "a b@c.com", "@x.com", "x@.com"]) {
+      expect(() => validateFeedbackRequest({ ...good, email })).toThrow();
+    }
+  });
+
+  it("拒绝超过 500 字的反馈内容", () => {
+    expect(() =>
+      validateFeedbackRequest({ ...good, content: "字".repeat(501) })
+    ).toThrow();
+  });
+
+  it("接受恰好 500 字", () => {
+    expect(() =>
+      validateFeedbackRequest({ ...good, content: "字".repeat(500) })
+    ).not.toThrow();
+  });
+
+  it("拒绝称呼过长 / 非对象", () => {
+    expect(() => validateFeedbackRequest({ ...good, name: "名".repeat(31) })).toThrow();
+    expect(() => validateFeedbackRequest(null)).toThrow();
+    expect(() => validateFeedbackRequest("x")).toThrow();
   });
 });

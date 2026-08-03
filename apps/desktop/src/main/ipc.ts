@@ -5,6 +5,7 @@ import { BrowserWindow, app, ipcMain, nativeTheme, shell } from "electron";
 import { ConfigError } from "@giszhc/vips-thumbnail-core";
 import { IPC, IPC_EVENTS } from "../shared/ipc-types";
 import type { DialogService } from "./services/dialogService";
+import type { FeedbackService } from "./services/feedbackService";
 import type { ProcessService } from "./services/processService";
 import type { SettingsService } from "./services/settingsService";
 import type { ThumbnailService } from "./services/thumbnailService";
@@ -13,6 +14,7 @@ import type { VipsService } from "./services/vipsService";
 import { logCrash } from "./crash-logger";
 import {
   assertAbsolutePath,
+  validateFeedbackRequest,
   validateScanRequest,
   validateSettingsPatch,
   validateTaskId,
@@ -27,6 +29,7 @@ export interface Services {
   dialog: DialogService;
   settings: SettingsService;
   update: UpdateService;
+  feedback: FeedbackService;
 }
 
 export function sendToAll(channel: string, payload: unknown): void {
@@ -102,6 +105,11 @@ export function registerIpc(services: Services): void {
     }
     return shell.openExternal(raw);
   });
+
+  // ---- 用户反馈 ----
+  ipcMain.handle(IPC.feedbackSend, (_event, raw) =>
+    services.feedback.send(validateFeedbackRequest(raw))
+  );
   ipcMain.handle(IPC.windowControl, (event, raw) => {
     const { action } = validateWindowControl(raw);
     const window = BrowserWindow.fromWebContents(event.sender);
