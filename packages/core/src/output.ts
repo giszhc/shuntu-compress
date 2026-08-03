@@ -19,9 +19,16 @@ export interface OutputPlanRequest {
  * 归一化输出扩展名：--ext 传什么用什么（与 CLI 一致），桌面端 JPG 统一传 .jpg。
  * 说明：输入白名单（SUPPORTED_EXTS）内的格式均有无损对应的保存算子（bmp→magicksave），
  * 故保持原格式无需回退；若未来加入无法输出的输入格式，在此处做回退处理。
+ *
+ * svg 例外：vips 可读（librsvg）但无 svgsave 保存算子，"保持原格式"（ext=null）
+ * 无法产出 .svg，故 svg 输入默认栅格化为 .png（无损、通用）。用户显式选
+ * .jpg/.webp 等位图输出格式时按其选择输出。
  */
 export function resolveTargetExt(input: string, ext: OutputExt | null): string {
-  return ext ?? path.extname(input).toLowerCase();
+  if (ext) return ext;
+  const inputExt = path.extname(input).toLowerCase();
+  if (inputExt === ".svg") return ".png";
+  return inputExt;
 }
 
 function relativeSubDir(input: string, baseDir: string): string {

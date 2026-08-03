@@ -44,6 +44,27 @@ export function App(): React.JSX.Element {
       }),
       window.app.onTaskFinished(e => {
         useTaskStore.getState().onFinished(e);
+        const fs = useFileStore.getState();
+        // 把本次任务有有效 key 的条目最终状态回填（队列对“未启动”项标 canceled 时
+        // input 为空，渲染层无法据此定位，故下面再兜底清扫）。
+        for (const r of e.results) {
+          if (r.input) {
+            fs.applyResult(r.input, {
+              status: r.status,
+              output: r.output,
+              compressedSize: r.compressedSize,
+              error: r.error
+            });
+          }
+        }
+        // 兜底：任务已结束，任何仍是 transient（pending/processing）的条目，
+        // 只能是“未启动被取消”的残留（其 input 为空、未被上面回填）。
+        // 否则取消后这些项卡在 pending，文件夹聚合行的“处理中”图标一直转圈。
+        for (const [key, item] of Object.entries(useFileStore.getState().items)) {
+          if (item.status === "pending" || item.status === "processing") {
+            useFileStore.getState().applyResult(key, { ...item, status: "canceled" });
+          }
+        }
       }),
       window.app.onInstallProgress(e => {
         useUiStore.getState().setInstallProgress(e);

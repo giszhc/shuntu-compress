@@ -38,9 +38,23 @@ export function buildVipsSteps(
     return null;
   }
 
+  // ICO 容器单图最大 256×256（ICO 目录项用 1 字节存边长，0 表示 256）。
+  // ImageMagick 超过该尺寸会拒绝（WidthOrHeightExceedsLimit / PNG32 编码失败），
+  // 故 ICO 输出时把最长边缩放到 ≤256；用户指定更小尺寸则尊重该尺寸。
+  const ICO_MAX = 256;
+  const ICO_DEFAULT = 64;
+  const effectiveSize =
+    outExt === ".ico"
+      ? options.size == null
+        ? ICO_DEFAULT
+        : options.size <= ICO_MAX
+          ? options.size
+          : ICO_MAX
+      : options.size;
+
   const steps: VipsStep[] = [];
-  if (options.size) {
-    steps.push({ args: ["thumbnail", input, temporary, String(options.size)] });
+  if (effectiveSize != null) {
+    steps.push({ args: ["thumbnail", input, temporary, String(effectiveSize)] });
   } else {
     steps.push({ args: ["resize", input, temporary, "1"] });
   }
@@ -95,6 +109,10 @@ export function buildVipsSteps(
         `--Q=${options.quality}`
       ]
     });
+  } else if (outExt === ".ico") {
+    // ICO：Windows 图标容器，单图最大 256×256（上方已缩放）。
+    // 用 --format ico 显式指定格式，避免最终临时文件 .tmp 扩展名被 ImageMagick 误判。
+    steps.push({ args: ["magicksave", temporary, finalTarget, "--format", "ico"] });
   } else if (outExt === ".bmp") {
     // BMP 无压缩概念，经 ImageMagick 写出（保持原格式时的直通路径）
     steps.push({ args: ["magicksave", temporary, finalTarget] });

@@ -14,6 +14,15 @@ describe("resolveTargetExt", () => {
     expect(resolveTargetExt("a.PNG", null)).toBe(".png");
     expect(resolveTargetExt("b.JpG", null)).toBe(".jpg");
   });
+
+  it("svg 输入 + null 回退为 .png（vips 无 svgsave，栅格化输出）", () => {
+    expect(resolveTargetExt("a.svg", null)).toBe(".png");
+    expect(resolveTargetExt("a.SVG", null)).toBe(".png");
+  });
+
+  it("svg 输入 + 显式位图格式按用户选择", () => {
+    expect(resolveTargetExt("a.svg", ".webp")).toBe(".webp");
+  });
 });
 
 describe("planOutput - flat 模式（CLI 行为）", () => {

@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { memo } from "react";
 import type { FileEntry } from "../../../shared/ipc-types";
+import { useUiStore } from "../stores/uiStore";
 import type { ItemState } from "../stores/fileStore";
 import { formatBytes, formatSaving } from "../utils/format";
 
@@ -79,7 +80,7 @@ export const FileRow = memo(function FileRow({
   onRemove
 }: FileProps): React.JSX.Element {
   const ext = entry.fileName.toLowerCase().split(".").pop() ?? "";
-  // 所有图片统一蓝色标识（jpg/png/webp/gif/tiff/bmp 同色），文件夹黄色，其他灰色
+  // 所有图片统一蓝色标识（jpg/png/webp/gif/tiff/bmp/svg 同色），文件夹黄色，其他灰色
   const iconTone =
     ext === "jpg" ||
     ext === "jpeg" ||
@@ -88,7 +89,8 @@ export const FileRow = memo(function FileRow({
     ext === "gif" ||
     ext === "tiff" ||
     ext === "tif" ||
-    ext === "bmp"
+    ext === "bmp" ||
+    ext === "svg"
       ? "image"
       : "other";
   return (
@@ -111,6 +113,14 @@ export const FileRow = memo(function FileRow({
       <div className="col-actions">
         <button
           type="button"
+          title="打开所在目录"
+          disabled={running || item?.status !== "done"}
+          onClick={() => void window.app.openInExplorer(item?.output ?? entry.absolutePath)}
+        >
+          <FolderOpen size={14} />
+        </button>
+        <button
+          type="button"
           title="移除"
           disabled={running}
           onClick={() => onRemove(entry.absolutePath)}
@@ -128,10 +138,13 @@ export interface DirAggregate {
   totalSize: number;
   done: number;
   failed: number;
+  canceled: number;
   processing: number;
   queued: number;
   compressedTotal: number;
   doneOriginalTotal: number;
+  /** 已产出文件的实际输出目录（取首个 done 项 output 的父目录，兼容自定义输出目录） */
+  outputDir: string | null;
 }
 
 interface DirProps {
@@ -176,6 +189,14 @@ function DirStatusCell({ agg }: { agg: DirAggregate }) {
       </span>
     );
   }
+  if (agg.canceled > 0) {
+    return (
+      <span className="status-canceled status-text">
+        <Ban size={13} style={{ verticalAlign: "-2px" }} /> 已取消（
+        {agg.done} 完成 / {agg.canceled} 取消）
+      </span>
+    );
+  }
   return <span className="status-pending status-text">待处理</span>;
 }
 
@@ -187,6 +208,17 @@ export const DirRow = memo(function DirRow({
   top,
   onRemoveDir
 }: DirProps): React.JSX.Element {
+  const toast = useUiStore(s => s.toast);
+  // 至少一项成功即可打开输出文件夹。输出目录取首个 done 项 output 的父目录，
+  // 不自行拼接 rootDir/compressed —— 用户可能设置了自定义输出目录（params.outputDir）。
+  const canOpenOutput = agg.done > 0;
+  const outputDir = canOpenOutput ? agg.outputDir : null;
+  const handleOpenOutput = () => {
+    if (!outputDir) return;
+    window.app
+      .openInExplorer(outputDir)
+      .catch(() => toast("输出文件夹不存在或已被移动", "error"));
+  };
   return (
     <div className="file-row dir-row" style={{ top }}>
       <div className="file-icon file-icon--dir">
@@ -205,6 +237,16 @@ export const DirRow = memo(function DirRow({
         <DirStatusCell agg={agg} />
       </div>
       <div className="col-actions">
+        <button
+          type="button"
+          title={
+            canOpenOutput ? "打开输出文件夹" : "尚未产出文件，暂不可打开"
+          }
+          disabled={!canOpenOutput}
+          onClick={handleOpenOutput}
+        >
+          <FolderOpen size={14} />
+        </button>
         <button
           type="button"
           title="移除该文件夹全部图片"

@@ -111,10 +111,12 @@ export function FileArea(): React.JSX.Element {
       totalSize: 0,
       done: 0,
       failed: 0,
+      canceled: 0,
       processing: 0,
       queued: 0,
       compressedTotal: 0,
-      doneOriginalTotal: 0
+      doneOriginalTotal: 0,
+      outputDir: null
     };
     for (const m of members) {
       agg.totalSize += m.size;
@@ -124,8 +126,18 @@ export function FileArea(): React.JSX.Element {
         agg.done += 1;
         agg.compressedTotal += item.compressedSize ?? 0;
         agg.doneOriginalTotal += m.size;
+        // 记录真实输出目录（取首个 done 项 output 的父目录）：
+        // 兼容用户自定义输出目录（params.outputDir）与默认 rootDir/compressed。
+        if (agg.outputDir === null && item.output) {
+          const idx = Math.max(
+            item.output.lastIndexOf("/"),
+            item.output.lastIndexOf("\\")
+          );
+          agg.outputDir = idx > 0 ? item.output.slice(0, idx) : item.output;
+        }
       } else if (item.status === "failed") agg.failed += 1;
       else if (item.status === "processing") agg.processing += 1;
+      else if (item.status === "canceled") agg.canceled += 1;
       else if (item.status === "pending") agg.queued += 1;
     }
     return agg;
@@ -201,9 +213,9 @@ export function FileArea(): React.JSX.Element {
               : "拖入图片或文件夹开始压缩"}
           </h3>
           <p className="compress-drop-desc">
-            支持 JPG / PNG / WebP / GIF / TIFF / BMP 等格式，可拖入多个文件或整个文件夹
+            支持 JPG / PNG / WebP / GIF / TIFF / BMP / SVG 等格式，可拖入多个文件或整个文件夹
             <br />
-            <span className="sub">输出保存到独立目录，绝不覆盖原图</span>
+            <span className="sub">输出保存到独立目录，绝不覆盖原图；SVG 将栅格化为 PNG 输出</span>
           </p>
           {!scanning && (
             <div className="compress-drop-actions">

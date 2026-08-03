@@ -26,7 +26,8 @@ export const SUPPORTED_EXTS: SupportedExt[] = [
   ".gif",
   ".tiff",
   ".tif",
-  ".bmp"
+  ".bmp",
+  ".svg"
 ];
 
 /** 默认输出子目录名（桌面端：原目录/compressed） */

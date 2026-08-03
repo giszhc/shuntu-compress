@@ -36,6 +36,13 @@ const PRESET_VALUES = new Set(
 const SIZE_MIN = 1;
 const SIZE_MAX = 20000;
 
+/** ICO 输出可选尺寸（与类型选择同款网格）；默认 64 */
+const ICO_SIZES = [16, 32, 48, 64, 128, 256];
+
+/** 不需要压缩质量参数的输出格式（GIF 固定调色板、ICO 为图标容器）；
+ *  选中这些格式时隐藏「压缩质量」section，避免显示无效控件。 */
+const NO_QUALITY_EXTS = new Set<string>([".gif", ".ico"]);
+
 export function ParamsPanel(): React.JSX.Element {
   const params = useSettingsStore(s => s.params);
   const setParam = useSettingsStore(s => s.setParam);
@@ -48,7 +55,9 @@ export function ParamsPanel(): React.JSX.Element {
     isCustomSize ? String(params.size) : ""
   );
   useEffect(() => {
-    if (isCustomSize) setCustomDraft(String(params.size));
+    // 与 store 同步：自定义尺寸时显示当前值，否则（预设 / 保持原尺寸）清空草稿，
+    // 避免从 ICO 切回普通格式时残留的 ICO 档位被误显示为"自定义"
+    setCustomDraft(isCustomSize ? String(params.size) : "");
   }, [isCustomSize, params.size]);
 
   const commitCustomSize = (raw: string): void => {
@@ -64,16 +73,15 @@ export function ParamsPanel(): React.JSX.Element {
   const qualityHint =
     params.ext === ".png"
       ? "PNG 为无损格式：低于 100 时启用调色板量化，对截图 / 图标 / 插画最明显；照片类基本不减小。"
-      : params.ext === ".gif"
-        ? "GIF 固定为 256 色调色板，无质量参数，适合动图 / 低色彩图像。"
-        : params.ext === ".tiff"
-          ? "TIFF 使用 JPEG 压缩，值越低体积越小，兼容专业图像软件。"
-          : "JPG / WebP 为有损压缩，值越低体积越小。";
+      : params.ext === ".tiff"
+        ? "TIFF 使用 JPEG 压缩，值越低体积越小，兼容专业图像软件。"
+        : "JPG / WebP 为有损压缩，值越低体积越小。";
 
   return (
     <aside className="compress-params">
       <div className="compress-params-scroll">
-        {/* ---------- 压缩质量 ---------- */}
+        {/* ---------- 压缩质量（无质量参数的格式隐藏：GIF / ICO） ---------- */}
+        {!NO_QUALITY_EXTS.has(params.ext ?? "") && (
         <section className="compress-params-section">
           <div className="compress-params-header">
             <span className="compress-params-icon">
@@ -113,8 +121,10 @@ export function ParamsPanel(): React.JSX.Element {
             <div className="compress-params-hint">{qualityHint}</div>
           </div>
         </section>
+        )}
 
-        {/* ---------- 最大边尺寸 ---------- */}
+        {/* ---------- 最大边尺寸（非 ICO 时显示） ---------- */}
+        {params.ext !== ".ico" && (
         <section className="compress-params-section">
           <div className="compress-params-header">
             <span className="compress-params-icon compress-params-icon--purple">
@@ -172,6 +182,44 @@ export function ParamsPanel(): React.JSX.Element {
             </div>
           </div>
         </section>
+        )}
+
+        {/* ---------- ICO 尺寸（仅 ICO 输出时显示，与类型选择同款网格） ---------- */}
+        {params.ext === ".ico" && (
+        <section className="compress-params-section">
+          <div className="compress-params-header">
+            <span className="compress-params-icon compress-params-icon--purple">
+              <Maximize2 size={15} />
+            </span>
+            <span className="compress-params-label">ICO 尺寸</span>
+            <span className="compress-params-value">
+              {params.size === null ? "64 px" : `${params.size} px`}
+            </span>
+          </div>
+          <div className="compress-params-card">
+            <div className="compress-size-grid">
+              {ICO_SIZES.map(opt => (
+                <button
+                  key={opt}
+                  type="button"
+                  className={
+                    params.size === opt || (params.size == null && opt === 64)
+                      ? "active"
+                      : ""
+                  }
+                  disabled={running}
+                  onClick={() => setParam("size", opt)}
+                >
+                  {opt}
+                </button>
+              ))}
+            </div>
+            <div className="compress-params-hint">
+              ICO 为 Windows 图标容器，可选 16/32/48/64/128/256；无质量参数。
+            </div>
+          </div>
+        </section>
+        )}
 
         {/* ---------- 输出格式 ---------- */}
         <section className="compress-params-section">
@@ -191,7 +239,8 @@ export function ParamsPanel(): React.JSX.Element {
                   { label: "PNG", value: ".png" },
                   { label: "WebP", value: ".webp" },
                   { label: "GIF", value: ".gif" },
-                  { label: "TIFF", value: ".tiff" }
+                  { label: "TIFF", value: ".tiff" },
+                  { label: "ICO", value: ".ico" }
                 ] as const
               ).map(opt => (
                 <button
@@ -199,7 +248,22 @@ export function ParamsPanel(): React.JSX.Element {
                   type="button"
                   className={params.ext === opt.value ? "active" : ""}
                   disabled={running}
-                  onClick={() => setParam("ext", opt.value)}
+                  onClick={() => {
+                    const nextExt = opt.value;
+                    setParam("ext", nextExt);
+                    if (nextExt === ".ico") {
+                      // 进入 ICO：尺寸必须是 ICO 档位之一，否则归位默认 64
+                      if (params.size == null || !ICO_SIZES.includes(params.size)) {
+                        setParam("size", 64);
+                      }
+                    } else if (params.ext === ".ico") {
+                      // 从 ICO 切走：ICO 尺寸（16/32/48/64/128/256）不在普通预设里，
+                      // 会被误判为"自定义"显示在最大边尺寸里，故归位"保持原尺寸"
+                      if (params.size != null && ICO_SIZES.includes(params.size)) {
+                        setParam("size", null);
+                      }
+                    }
+                  }}
                 >
                   {opt.label}
                 </button>

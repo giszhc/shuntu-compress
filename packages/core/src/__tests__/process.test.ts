@@ -134,6 +134,37 @@ describe("buildVipsSteps", () => {
     expect(steps?.[1].args[0]).toBe("magicksave");
   });
 
+  it("ICO 输出走 magicksave --format ico（未指定尺寸默认 64）", () => {
+    const steps = buildVipsSteps("a.png", "out.ico", "tmp", {
+      quality: 85,
+      size: null,
+      ext: ".ico"
+    });
+    expect(steps?.[0].args).toEqual(["thumbnail", "a.png", "tmp", "64"]);
+    expect(steps?.[1].args).toEqual([
+      "magicksave",
+      "tmp",
+      "out.ico",
+      "--format",
+      "ico"
+    ]);
+  });
+
+  it("ICO 输出尊重用户 ≤256 尺寸，超过则封顶 256", () => {
+    const small = buildVipsSteps("a.png", "out.ico", "tmp", {
+      quality: 85,
+      size: 128,
+      ext: ".ico"
+    });
+    expect(small?.[0].args).toEqual(["thumbnail", "a.png", "tmp", "128"]);
+    const big = buildVipsSteps("a.png", "out.ico", "tmp", {
+      quality: 85,
+      size: 512,
+      ext: ".ico"
+    });
+    expect(big?.[0].args).toEqual(["thumbnail", "a.png", "tmp", "256"]);
+  });
+
   it("不支持的输出格式抛 VipsError", () => {
     expect(() =>
       buildVipsSteps("a.jpg", "out.avif", "tmp", {

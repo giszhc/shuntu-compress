@@ -39,10 +39,13 @@ describe("isSupportedImage", () => {
     expect(isSupportedImage("a.avif")).toBe(false);
   });
 
-  it("未验证的格式被过滤（heic/heif/svg 不承诺支持）", () => {
+  it("未验证的格式被过滤（heic/heif 不承诺支持）", () => {
     expect(isSupportedImage("a.heic")).toBe(false);
     expect(isSupportedImage("a.heif")).toBe(false);
-    expect(isSupportedImage("a.svg")).toBe(false);
+  });
+
+  it("svg 已支持（vips librsvg 可读，输出栅格化）", () => {
+    expect(isSupportedImage("a.svg")).toBe(true);
   });
 });
 

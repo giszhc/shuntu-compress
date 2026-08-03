@@ -28,13 +28,14 @@ const VALID_OUTPUT_EXTS = new Set([
   ".png",
   ".webp",
   ".gif",
-  ".tiff"
+  ".tiff",
+  ".ico"
 ]);
 
 export function validateExt(value: unknown): OutputExt | null {
   if (value === null || value === undefined || value === "") return null;
   if (typeof value !== "string" || !VALID_OUTPUT_EXTS.has(value.toLowerCase())) {
-    throw new ConfigError("--ext 仅支持 .jpg、.jpeg、.png、.webp、.gif 或 .tiff");
+    throw new ConfigError("--ext 仅支持 .jpg、.jpeg、.png、.webp、.gif、.tiff 或 .ico");
   }
   return value.toLowerCase() as OutputExt;
 }

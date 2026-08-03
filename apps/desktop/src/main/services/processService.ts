@@ -208,6 +208,14 @@ export class ProcessService {
         this.running = null;
       }
 
+      // 修复：队列对“未启动”的任务标为 canceled，但其 input 为空（队列不感知
+      // absolutePath），渲染层无法据此定位条目，会导致取消后这些条目卡在 pending，
+      // 进而文件夹聚合行的“处理中”图标一直转圈。这里用 entries[i].absolutePath
+      // 统一回填 key。
+      results = results.map((r, i) =>
+        r.input ? r : { ...r, input: request.entries[i]?.absolutePath ?? r.input }
+      );
+
       const summary = summarize(results, startedAt, request);
       logInfo("task", `任务结束：${JSON.stringify(summary)}`);
       this.events.onTaskFinished({ taskId, summary, results });

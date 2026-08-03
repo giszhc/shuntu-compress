@@ -367,10 +367,12 @@ select {
 }
 
 .col-actions {
-  width: 30px;
+  width: 62px;
   flex-shrink: 0;
   display: flex;
-  justify-content: center;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 4px;
 }
 
 .col-actions button {

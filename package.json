@@ -10,6 +10,7 @@
     "dist:win": "pnpm --filter vips-thumbnail-desktop dist:win",
     "dist:mac:universal": "pnpm --filter vips-thumbnail-desktop dist:mac:universal",
     "release:docs": "node scripts/copy-installers-to-docs.mjs",
+    "publish:application": "node scripts/publish-application-to-gitee.mjs",
     "typecheck": "pnpm --filter @giszhc/vips-thumbnail-core typecheck && pnpm --filter vips-thumbnail-desktop typecheck",
     "test": "pnpm --filter @giszhc/vips-thumbnail-core test && pnpm --filter vips-thumbnail-desktop test",
     "postinstall": "node scripts/patch-electron-builder.mjs"
