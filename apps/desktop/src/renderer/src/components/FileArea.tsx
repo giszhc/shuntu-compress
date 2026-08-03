@@ -215,7 +215,7 @@ export function FileArea(): React.JSX.Element {
           <p className="compress-drop-desc">
             支持 JPG / PNG / WebP / GIF / TIFF / BMP / SVG 等格式，可拖入多个文件或整个文件夹
             <br />
-            <span className="sub">输出保存到独立目录，绝不覆盖原图；SVG 将栅格化为 PNG 输出</span>
+            <span className="sub">输出保存到独立目录，绝不覆盖原图</span>
           </p>
           {!scanning && (
             <div className="compress-drop-actions">
