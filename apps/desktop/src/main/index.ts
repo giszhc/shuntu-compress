@@ -273,8 +273,9 @@ app.on("second-instance", () => {
 
 app.whenReady().then(() => {
   const trayEnabled = !app.commandLine.hasSwitch("no-tray");
-  // macOS：以菜单栏（status bar）应用方式运行，隐藏 Dock 图标，行为与 Windows 托盘一致
-  if (process.platform === "darwin" && trayEnabled) app.dock?.hide();
+  // macOS：顶部栏 Tray 图标与 Dock 图标共存（Dock 图标保持显示，便于
+  // Cmd+Tab / Dock 切换；若日后想回归“纯菜单栏应用”，在 createWindow 前
+  // 调用 app.dock?.hide() 即可）
   registerIpc({
     vips: vipsService,
     process: processService,
