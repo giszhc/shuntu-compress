@@ -19,7 +19,7 @@ import https from "node:https";
 import os from "node:os";
 import path from "node:path";
 import { spawn } from "node:child_process";
-import { app } from "electron";
+import { app, shell } from "electron";
 import { IPC_EVENTS, type UpdateCheckResult, type UpdateStatusEvent } from "../../shared/ipc-types";
 import { logInfo } from "../crash-logger";
 
@@ -153,7 +153,9 @@ export class UpdateService {
     }
   }
 
-  /** 下载并静默安装新版本（Windows NSIS /S；macOS 不支持自动安装） */
+  /** 下载并静默安装新版本（Windows NSIS /S；macOS 不支持自动安装）。
+   *  Gitee raw CDN 偶尔对本机出口 IP 做访问频率限制（HTTP 403），
+   *  这种情况下自动下载会失败 → 自动回退到浏览器打开 Gitee 文件页让用户手动下载。 */
   async install(): Promise<void> {
     if (process.platform !== "win32") {
       throw new Error("当前平台暂不支持自动安装，请前往官网手动下载");
@@ -167,23 +169,47 @@ export class UpdateService {
       `shuntu-desktop-setup-${result.latestVersion}.exe`
     );
     logInfo("update", `开始下载更新：${result.downloadUrl} → ${target}`);
-    await this.downloadFile(result.downloadUrl, target);
-    const stat = fs.statSync(target);
-    if (stat.size < 1024 * 1024) {
-      throw new Error("下载的安装包无效（文件过小）");
+    try {
+      await this.downloadFile(result.downloadUrl, target);
+      const stat = fs.statSync(target);
+      if (stat.size < 1024 * 1024) {
+        throw new Error("下载的安装包无效（文件过小）");
+      }
+      logInfo("update", `下载完成（${stat.size} 字节），启动安装器…`);
+      // NSIS 静默安装：/S 不弹向导；安装完成后自动启动新版本（默认行为）。
+      // detached + unref：安装器独立于本进程运行，随后本应用退出。
+      const child = spawn(target, ["/S"], {
+        detached: true,
+        stdio: "ignore"
+      });
+      child.unref();
+      // 让渲染层有足够时间收到推送，再退出应用
+      setTimeout(() => {
+        app.quit();
+      }, 800);
+    } catch (err) {
+      // 自动下载失败（Gitee CDN 限流等）：回退到浏览器下载
+      const message = err instanceof Error ? err.message : "下载更新失败";
+      const isCdnLimit = /HTTP\s*403|HTTP\s*429|ENOTFOUND|ETIMEDOUT|ECONNRESET/i.test(message);
+      logInfo("update", `自动下载失败（${message}），isCdnLimit=${isCdnLimit}`);
+      if (isCdnLimit && result.downloadUrl) {
+        try {
+          // raw 直链 → 文件详情页：浏览器下载不受 CDN 频率限制
+          const pageUrl = result.downloadUrl.replace(
+            "/raw/main/",
+            "/tree/main/"
+          );
+          await shell.openExternal(pageUrl);
+          logInfo("update", `已打开浏览器下载页：${pageUrl}`);
+          throw new Error("已打开浏览器下载页，请在浏览器中下载安装");
+        } catch (openErr) {
+          // shell.openExternal 失败（极少）——抛出原始下载错误
+          if (openErr instanceof Error && openErr.message.includes("已打开")) throw openErr;
+          throw err;
+        }
+      }
+      throw err;
     }
-    logInfo("update", `下载完成（${stat.size} 字节），启动安装器…`);
-    // NSIS 静默安装：/S 不弹向导；安装完成后自动启动新版本（默认行为）。
-    // detached + unref：安装器独立于本进程运行，随后本应用退出。
-    const child = spawn(target, ["/S"], {
-      detached: true,
-      stdio: "ignore"
-    });
-    child.unref();
-    // 让渲染层有足够时间收到推送，再退出应用
-    setTimeout(() => {
-      app.quit();
-    }, 800);
   }
 
   private downloadFile(url: string, target: string): Promise<void> {
