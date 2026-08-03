@@ -4,7 +4,7 @@
  * - installing：下载安装中，显示进度。
  * - error：下载/检查失败。
  */
-import { AlertTriangle, Download, Loader2, RefreshCw, Sparkles } from "lucide-react";
+import { Download, Loader2, RefreshCw, Sparkles } from "lucide-react";
 import { useUiStore } from "../stores/uiStore";
 import { formatBytes } from "../utils/format";
 
@@ -14,6 +14,9 @@ export function UpdateModal(): React.JSX.Element | null {
   const error = useUiStore(s => s.updateError);
   const closeUpdateModal = useUiStore(s => s.closeUpdateModal);
   const toast = useUiStore(s => s.toast);
+
+  // macOS 不支持静默安装：按钮文案与提示语区分对待（点按后主进程打开浏览器下载对应芯片的 DMG）
+  const isMac = window.app.platform === "darwin";
 
   if (phase === "hidden") return null;
 
@@ -53,7 +56,7 @@ export function UpdateModal(): React.JSX.Element | null {
                 跳过
               </button>
               <button type="button" className="btn btn-primary" onClick={startInstall}>
-                <Download size={14} /> 立即更新
+                <Download size={14} /> {isMac ? "下载安装包" : "立即更新"}
               </button>
             </div>
           </>
@@ -99,30 +102,32 @@ export function UpdateModal(): React.JSX.Element | null {
         {phase === "error" && (
           <>
             <h2>
-              <AlertTriangle size={16} color="var(--danger)" /> 更新失败
+              <Download size={16} color="var(--accent)" /> {isMac ? "请手动完成更新" : "更新失败"}
             </h2>
             <p>{error ?? "未知错误"}</p>
             <div className="modal-actions">
               <button type="button" className="btn btn-secondary" onClick={closeUpdateModal}>
                 关闭
               </button>
-              <button
-                type="button"
-                className="btn btn-primary"
-                onClick={() => {
-                  // 重试：installUpdate 内部会重新 check，available 事件会重置错误态
-                  void window.app
-                    .installUpdate()
-                    .catch((err: unknown) => {
-                      useUiStore
-                        .getState()
-                        .toast(err instanceof Error ? err.message : "下载更新失败", "error");
-                      useUiStore.getState().closeUpdateModal();
-                    });
-                }}
-              >
-                <RefreshCw size={14} /> 重试
-              </button>
+              {!isMac && (
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={() => {
+                    // 重试：installUpdate 内部会重新 check，available 事件会重置错误态
+                    void window.app
+                      .installUpdate()
+                      .catch((err: unknown) => {
+                        useUiStore
+                          .getState()
+                          .toast(err instanceof Error ? err.message : "下载更新失败", "error");
+                        useUiStore.getState().closeUpdateModal();
+                      });
+                  }}
+                >
+                  <RefreshCw size={14} /> 重试
+                </button>
+              )}
             </div>
           </>
         )}

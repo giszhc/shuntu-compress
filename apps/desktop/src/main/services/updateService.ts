@@ -3,16 +3,22 @@
  *
  * 版本源约定（与 scripts/publish-application-to-gitee.mjs 一致）：
  *   仓库 giszhc/application-software 的 <GITEE_SUBDIR>/latest.json
- *   { "version": "1.1.0", "notes": "更新说明", "url": "<raw 直链>" }
+ *   {
+ *     "version": "1.1.0",
+ *     "notes": "更新说明",
+ *     "url": "<Windows exe raw 直链>",
+ *     "urlMacArm64": "<macOS Apple 芯片 dmg raw 直链>",
+ *     "urlMacX64": "<macOS Intel dmg raw 直链>"
+ *   }
  *
  * 检查走 Gitee contents API（实时、无 CDN 缓存延迟）；下载走 latest.json 里的 raw 直链。
  *
  * 流程：
  *   check()      → 拉取 latest.json，与当前版本对比，返回 UpdateCheckResult
- *   install()    → 下载安装包到临时目录 → 校验非空 → 启动安装器（NSIS /S 静默）→ 退出应用
- *
- * 仅 Windows 支持自动静默安装（NSIS /S）；macOS（dmg）不支持命令行静默，
- * 检查到更新时渲染层提示用户手动下载，install() 在非 Windows 下抛错。
+ *                  （downloadUrl 按平台/架构选择：Windows→url；macOS arm64→urlMacArm64；macOS x64→urlMacX64）
+ *   install()    → Windows：下载安装包 → NSIS /S 静默安装 → 退出应用
+ *                  macOS：不支持命令行静默安装，改为打开浏览器下载对应架构的 DMG，
+ *                  提示用户手动拖入「应用程序」完成安装
  */
 import fs from "node:fs";
 import https from "node:https";
@@ -31,6 +37,26 @@ interface LatestJson {
   version?: string;
   notes?: string;
   url?: string;
+  /** macOS Apple 芯片（arm64）安装包直链 */
+  urlMacArm64?: string;
+  /** macOS Intel（x64）安装包直链 */
+  urlMacX64?: string;
+}
+
+/**
+ * 根据当前平台与 CPU 架构，从 latest.json 中选择正确的安装包直链。
+ * - Windows 任意架构 → url（exe）
+ * - macOS arm64      → urlMacArm64（Apple 芯片）
+ * - macOS x64        → urlMacX64（Intel）
+ * 缺失对应字段时回退到 url；都没有返回 undefined。
+ */
+export function pickDownloadUrl(data: LatestJson): string | undefined {
+  const arch = process.arch;
+  if (process.platform === "darwin") {
+    const macUrl = arch === "arm64" ? data.urlMacArm64 : arch === "x64" ? data.urlMacX64 : undefined;
+    return macUrl ?? data.url;
+  }
+  return data.url;
 }
 
 function parseVersion(v: string): number[] {
@@ -141,7 +167,7 @@ export class UpdateService {
         currentVersion,
         latestVersion,
         notes: data.notes,
-        downloadUrl: data.url
+        downloadUrl: pickDownloadUrl(data)
       };
     } catch (err) {
       const message = err instanceof Error ? err.message : "检查更新失败";
@@ -157,16 +183,33 @@ export class UpdateService {
   }
 
 /**
- * 下载并静默安装新版本（Windows NSIS /S；macOS 不支持自动安装）。
+ * 下载并静默安装新版本（Windows NSIS /S）。
+ * macOS 不支持命令行静默安装，改为打开浏览器下载对应架构（arm64/x64）的 DMG，
+ * 提示用户手动拖入「应用程序」完成安装。
  *  Gitee raw CDN 偶尔对本机出口 IP 做访问频率限制（HTTP 403），
  *  自动下载会失败 → 提示版本过旧并打开官网让用户重新下载。 */
   async install(): Promise<void> {
-    if (process.platform !== "win32") {
-      throw new Error("当前平台暂不支持自动安装，请前往官网手动下载");
-    }
     const result = await this.check();
     if (!result.hasUpdate || !result.downloadUrl) {
       throw new Error("没有可安装的更新");
+    }
+    if (process.platform !== "win32") {
+      // macOS：打开浏览器下载对应架构的 DMG（raw 直链），用户手动安装
+      logInfo("update", `macOS 不支持静默安装，打开浏览器下载：${result.downloadUrl}`);
+      try {
+        await shell.openExternal(result.downloadUrl);
+        logInfo("update", "已打开浏览器开始下载 DMG");
+        this.push({
+          phase: "error",
+          message:
+            "macOS 无法自动安装，已打开浏览器下载对应芯片的安装包，请拖入「应用程序」完成更新。"
+        });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        logInfo("update", `打开浏览器失败：${message}`);
+        throw new Error("无法打开浏览器下载更新，请前往官网手动下载。");
+      }
+      return;
     }
     const target = path.join(
       os.tmpdir(),

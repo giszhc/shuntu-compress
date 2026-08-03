@@ -43,7 +43,9 @@ pnpm dev              # 开发模式（热更新）
 | `pnpm typecheck` | 类型检查（core + desktop） |
 | `pnpm test` | 单元测试（core + desktop） |
 | `pnpm dist:win` | 打包 Windows 安装包（NSIS，输出至 `apps/desktop/release/`） |
-| `pnpm dist:mac:universal` | 打包 macOS 通用安装包（DMG，输出至 `apps/desktop/release/`） |
+| `pnpm dist:mac:universal` | 打包 macOS 通用安装包（DMG，Intel + Apple 芯片，输出至 `apps/desktop/release/`） |
+| `pnpm --filter vips-thumbnail-desktop dist:mac:arm64` | 打包 macOS Apple 芯片（M 系列）安装包（DMG） |
+| `pnpm --filter vips-thumbnail-desktop dist:mac:x64` | 打包 macOS Intel 安装包（DMG） |
 | `pnpm release:docs` | 部署官网提示（安装包托管在 Gitee，不再拷贝进 `docs/`） |
 
 ## 压缩引擎
@@ -58,10 +60,11 @@ pnpm dev              # 开发模式（热更新）
 - 在线地址：https://giszhc.github.io/shuntu-compress/
 - 安装包托管在 Gitee（不再入库 `docs/`）：
   - Windows：https://gitee.com/giszhc/application-software/raw/main/%E7%9E%AC%E5%9B%BE%E5%8E%8B%E7%BC%A9/shuntu-desktop.exe
-  - macOS：https://gitee.com/giszhc/application-software/raw/main/%E7%9E%AC%E5%9B%BE%E5%8E%8B%E7%BC%A9/shuntu-desktop.dmg
+  - macOS（Apple 芯片 M 系列）：https://gitee.com/giszhc/application-software/raw/main/%E7%9E%AC%E5%9B%BE%E5%8E%8B%E7%BC%A9/shuntu-desktop-arm64.dmg
+  - macOS（Intel）：https://gitee.com/giszhc/application-software/raw/main/%E7%9E%AC%E5%9B%BE%E5%8E%8B%E7%BC%A9/shuntu-desktop-x64.dmg
 - 发布流程：
-  1. `pnpm dist:win`（Windows）/ `pnpm dist:mac:universal`（macOS）完成打包；
-  2. 安装包自行上传到 Gitee 的 `application-software` 仓库 `瞬图压缩/` 目录（`release:docs` 已不再拷贝，仅作提示）；
+  1. `pnpm dist:win`（Windows）/ `pnpm dist:mac:universal` 或 `dist:mac:arm64` + `dist:mac:x64`（macOS）完成打包；
+  2. `pnpm publish:application` 自动上传安装包到 Gitee 的 `application-software` 仓库 `瞬图压缩/` 目录并推送；
   3. 提交并推送 `main`，GitHub Actions 自动部署 `docs/` 静态官网到 Pages。
 
 ## License

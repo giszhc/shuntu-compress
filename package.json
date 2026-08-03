@@ -10,6 +10,8 @@
     "dist:win": "pnpm --filter vips-thumbnail-desktop dist:win",
     "dist:win:safe": "node scripts/dist-win-safemode.mjs",
     "dist:mac:universal": "pnpm --filter vips-thumbnail-desktop dist:mac:universal",
+    "dist:mac:arm64": "pnpm --filter vips-thumbnail-desktop dist:mac:arm64",
+    "dist:mac:x64": "pnpm --filter vips-thumbnail-desktop dist:mac:x64",
     "release:docs": "node scripts/copy-installers-to-docs.mjs",
     "publish:application": "node scripts/publish-application-to-gitee.mjs",
     "typecheck": "pnpm --filter @giszhc/vips-thumbnail-core typecheck && pnpm --filter vips-thumbnail-desktop typecheck",

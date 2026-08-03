@@ -5,7 +5,9 @@
  * 流程：
  *   1. 在 apps/desktop/release/ 找出构建产物
  *        - Windows: vips-thumbnail-desktop-setup-*.exe  → 重命名为 shuntu-desktop.exe
- *        - macOS:   vips-thumbnail-desktop-*-*.dmg      → 重命名为 shuntu-desktop.dmg
+ *        - macOS:   vips-thumbnail-desktop-*-arm64.dmg  → 重命名为 shuntu-desktop-arm64.dmg（Apple 芯片）
+ *        - macOS:   vips-thumbnail-desktop-*-x64.dmg    → 重命名为 shuntu-desktop-x64.dmg（Intel）
+ *        - macOS:   （兼容旧命名）vips-thumbnail-desktop-*-universal.dmg → shuntu-desktop.dmg
  *   2. 确保本地有 giszhc/application-software 的 git 克隆（没有就 clone）
  *   3. 把安装包拷进仓库的 <GITEE_SUBDIR>（默认「瞬图压缩」）目录
  *   4. git add / commit / push 到 <GITEE_BRANCH>（默认 main）
@@ -63,11 +65,18 @@ if (!fs.existsSync(releaseDir)) {
 }
 
 const winArtifact = findArtifact(/^vips-thumbnail-desktop-setup-.*\.exe$/);
-const macArtifact = findArtifact(/^vips-thumbnail-desktop-.*\.dmg$/);
+const macArmArtifact = findArtifact(/^vips-thumbnail-desktop-.*-arm64\.dmg$/);
+const macX64Artifact = findArtifact(/^vips-thumbnail-desktop-.*-x64\.dmg$/);
+// 兼容旧的 universal 包命名（仅当双架构产物都不存在时兜底）
+const macUniversalArtifact = !macArmArtifact && !macX64Artifact
+  ? findArtifact(/^vips-thumbnail-desktop-.*\.dmg$/)
+  : null;
 
 const toPublish = [];
 if (winArtifact) toPublish.push({ src: winArtifact, dst: 'shuntu-desktop.exe', label: 'Windows' });
-if (macArtifact) toPublish.push({ src: macArtifact, dst: 'shuntu-desktop.dmg', label: 'macOS' });
+if (macArmArtifact) toPublish.push({ src: macArmArtifact, dst: 'shuntu-desktop-arm64.dmg', label: 'macOS(Apple芯片)' });
+if (macX64Artifact) toPublish.push({ src: macX64Artifact, dst: 'shuntu-desktop-x64.dmg', label: 'macOS(Intel)' });
+if (macUniversalArtifact) toPublish.push({ src: macUniversalArtifact, dst: 'shuntu-desktop.dmg', label: 'macOS(universal)' });
 
 if (toPublish.length === 0) {
   console.error(`[publish:application] release/ 下没有任何安装包（期望 vips-thumbnail-desktop-setup-*.exe 或 *.dmg）。`);
@@ -104,26 +113,34 @@ for (const p of toPublish) {
 }
 
 // ---- 3.5 生成版本文件 latest.json（应用内自动更新使用） ----
-// 结构：{ version, notes, url }；版本号取自 Windows 安装包文件名（如 1.0.0）。
-// url 为 Windows 安装包 raw 直链，供 UpdateService 自动下载。
-const versionMatch = winArtifact
-  ? /setup-([\d.]+)\.exe$/.exec(winArtifact)
-  : null;
-const latestVersion = versionMatch ? versionMatch[1] : null;
+// 结构：{ version, notes, url, urlMacArm64, urlMacX64 }。
+// 版本号优先取自 Windows 安装包文件名（如 1.0.0）；无 Windows 包时从 macOS 包文件名提取。
+// url 为 Windows 安装包 raw 直链（供 UpdateService 自动下载）；
+// urlMacArm64 / urlMacX64 为 macOS 双架构直链（Apple 芯片 / Intel，供手动下载）。
+const winVersionMatch = winArtifact ? /setup-([\d.]+)\.exe$/.exec(winArtifact) : null;
+const macVersionMatch = macArmArtifact
+  ? /desktop-([\d.]+)-arm64\.dmg$/.exec(macArmArtifact)
+  : macX64Artifact
+    ? /desktop-([\d.]+)-x64\.dmg$/.exec(macX64Artifact)
+    : null;
+const latestVersion = (winVersionMatch ?? macVersionMatch)?.[1] ?? null;
 const latestJsonPath = path.join(destDir, 'latest.json');
+const rawBase = `https://gitee.com/giszhc/application-software/raw/main/${encodeURIComponent(GITEE_SUBDIR)}`;
 if (latestVersion) {
   const latestJson = {
     version: latestVersion,
     notes: `瞬图压缩 v${latestVersion} 更新`,
-    url: `https://gitee.com/giszhc/application-software/raw/main/${encodeURIComponent(GITEE_SUBDIR)}/shuntu-desktop.exe`
+    url: `${rawBase}/shuntu-desktop.exe`,
+    urlMacArm64: `${rawBase}/shuntu-desktop-arm64.dmg`,
+    urlMacX64: `${rawBase}/shuntu-desktop-x64.dmg`
   };
   fs.writeFileSync(latestJsonPath, JSON.stringify(latestJson, null, 2) + '\n', 'utf8');
-  log(`已生成版本文件 latest.json → v${latestVersion}`);
+  log(`已生成版本文件 latest.json → v${latestVersion}（含 macOS 双架构直链）`);
 } else if (fs.existsSync(latestJsonPath)) {
-  // 无 Windows 安装包时保留既有版本文件（避免破坏自动更新源）
-  log('未找到 Windows 安装包，保留既有 latest.json');
+  // 无法提取版本号时保留既有版本文件（避免破坏自动更新源）
+  log('无法提取版本号，保留既有 latest.json');
 } else {
-  log('未找到 Windows 安装包，跳过 latest.json 生成');
+  log('无法提取版本号，跳过 latest.json 生成');
 }
 
 // ---- 4. 提交并推送 ----
@@ -148,4 +165,9 @@ run(`git -C "${GITEE_LOCAL_DIR}" push origin ${GITEE_BRANCH}`);
 
 log(`完成 ✅ 安装包已推送到 Gitee（${GITEE_SUBDIR}）`);
 log(`Windows 下载：https://gitee.com/giszhc/application-software/raw/main/${encodeURIComponent(GITEE_SUBDIR)}/shuntu-desktop.exe`);
-log(`macOS   下载：https://gitee.com/giszhc/application-software/raw/main/${encodeURIComponent(GITEE_SUBDIR)}/shuntu-desktop.dmg`);
+if (macArmArtifact || macUniversalArtifact) {
+  log(`macOS 下载（Apple 芯片）：https://gitee.com/giszhc/application-software/raw/main/${encodeURIComponent(GITEE_SUBDIR)}/shuntu-desktop-arm64.dmg`);
+}
+if (macX64Artifact) {
+  log(`macOS 下载（Intel）：https://gitee.com/giszhc/application-software/raw/main/${encodeURIComponent(GITEE_SUBDIR)}/shuntu-desktop-x64.dmg`);
+}

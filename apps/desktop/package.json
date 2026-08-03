@@ -11,6 +11,7 @@
     "dist:win": "pnpm build:icon && pnpm build && electron-builder --win --x64 --config electron-builder.yml",
     "dist:mac:universal": "pnpm build:icon && pnpm build && electron-builder --mac dmg --universal -c.asar=false --config electron-builder.yml",
     "dist:mac:arm64": "pnpm build:icon && pnpm build && electron-builder --mac dmg --arm64 --config electron-builder.yml",
+    "dist:mac:x64": "pnpm build:icon && pnpm build && electron-builder --mac dmg --x64 --config electron-builder.yml",
     "test": "vitest run",
     "test:e2e": "playwright test",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
