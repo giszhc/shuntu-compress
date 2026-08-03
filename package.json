@@ -8,6 +8,7 @@
     "build": "pnpm --filter vips-thumbnail-desktop build",
     "package": "pnpm --filter vips-thumbnail-desktop package",
     "dist:win": "pnpm --filter vips-thumbnail-desktop dist:win",
+    "dist:win:safe": "node scripts/dist-win-safemode.mjs",
     "dist:mac:universal": "pnpm --filter vips-thumbnail-desktop dist:mac:universal",
     "release:docs": "node scripts/copy-installers-to-docs.mjs",
     "publish:application": "node scripts/publish-application-to-gitee.mjs",
