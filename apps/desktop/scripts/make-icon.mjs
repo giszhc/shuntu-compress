@@ -1,20 +1,22 @@
 /**
  * 以 build/icon.svg 为唯一源文件，生成打包使用的 PNG、多尺寸 ICO 与 macOS ICNS。
  * 用法：node scripts/make-icon.mjs
+ *
+ * SVG → PNG 渲染使用 @resvg/resvg-js（纯 Node 原生绑定，无浏览器依赖）。
+ * 历史：曾用无头 Edge/Chrome --screenshot 渲染，但在部分非交互 shell 下
+ * 退出码为 0 却不产出 PNG（本机 agent 环境复现），故改用 resvg 根治。
  */
 import {
   existsSync,
   mkdirSync,
-  mkdtempSync,
   readFileSync,
   rmSync,
   writeFileSync
 } from "node:fs";
-import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { pathToFileURL } from "node:url";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { Resvg } from "@resvg/resvg-js";
 
 const currentDir = dirname(fileURLToPath(import.meta.url));
 const outDir = join(currentDir, "..", "build");
@@ -29,81 +31,19 @@ if (!existsSync(svgPath)) {
   throw new Error(`未找到 SVG 图标源文件：${svgPath}`);
 }
 
-function canRun(command) {
-  if (command.includes(":\\") || command.startsWith("/")) {
-    return existsSync(command);
-  }
-  const result = spawnSync(command, ["--version"], {
-    stdio: "ignore",
-    windowsHide: true
-  });
-  return !result.error;
-}
-
-function findBrowser() {
-  const candidates = [
-    process.env.ICON_RENDERER,
-    "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
-    "C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe",
-    "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
-    "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
-    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-    "microsoft-edge",
-    "google-chrome",
-    "chromium",
-    "chromium-browser"
-  ].filter(Boolean);
-
-  return candidates.find(canRun) || null;
-}
-
-const browser = findBrowser();
-if (!browser) {
-  throw new Error(
-    "未找到 Edge、Chrome 或 Chromium。可以通过 ICON_RENDERER 环境变量指定浏览器路径。"
-  );
-}
-
-/** 用无头浏览器把 SVG 渲染成指定尺寸 PNG */
+/** 用 resvg-js 把 SVG 渲染成指定尺寸 PNG（Node 原生，无浏览器依赖） */
 function renderPng(size, targetPath) {
-  const profileDir = mkdtempSync(join(tmpdir(), "vips-thumbnail-icon-"));
-  try {
-    rmSync(targetPath, { force: true });
-    const result = spawnSync(
-      browser,
-      [
-        "--headless=new",
-        "--disable-gpu",
-        "--disable-extensions",
-        "--hide-scrollbars",
-        "--no-first-run",
-        "--no-default-browser-check",
-        "--default-background-color=00000000",
-        "--force-device-scale-factor=1",
-        `--window-size=${size},${size}`,
-        `--user-data-dir=${profileDir}`,
-        `--screenshot=${targetPath}`,
-        pathToFileURL(svgPath).href
-      ],
-      {
-        stdio: "inherit",
-        windowsHide: true,
-        timeout: 20000,
-        killSignal: "SIGKILL"
-      }
-    );
-
-    // 某些 Edge 版本在截图成功后仍返回非零退出码，因此以产物为最终依据。
-    if (!existsSync(targetPath)) {
-      throw result.error || new Error(`SVG 渲染失败（${size}px），退出码：${result.status ?? "未知"}`);
-    }
-  } finally {
-    try {
-      rmSync(profileDir, { recursive: true, force: true });
-    } catch {
-      // Chromium 子进程可能短暂占用缓存目录，不影响图标产物。
-    }
+  const svg = readFileSync(svgPath, "utf8");
+  const resvg = new Resvg(svg, {
+    fitTo: { mode: "width", value: size },
+    background: "rgba(0,0,0,0)"
+  });
+  const png = resvg.render();
+  const data = png.asPng();
+  if (!data || data.length === 0) {
+    throw new Error(`SVG 渲染失败（${size}px）：未产出 PNG 数据`);
   }
+  writeFileSync(targetPath, data);
 }
 
 /**

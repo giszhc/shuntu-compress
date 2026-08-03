@@ -134,6 +134,7 @@ function createTray(): void {
   tray.setToolTip("瞬图压缩");
   const rebuildMenu = () => {
     if (!tray) return;
+    // 每项之间用分隔线隔开（用户要求：不要挤在一起）
     tray.setContextMenu(
       Menu.buildFromTemplate([
         {
@@ -142,8 +143,9 @@ function createTray(): void {
         },
         { type: "separator" },
         { label: "显示窗口", click: showMainWindow },
+        { type: "separator" },
         {
-          label: "检查更新…",
+          label: "检查更新",
           click: () => {
             showMainWindow();
             void updateService.check();

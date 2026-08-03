@@ -4,6 +4,8 @@ node_modules/
 # 构建产物
 apps/desktop/out/
 apps/desktop/release/
+apps/desktop/release-*/
+apps/desktop/dist-*/
 apps/desktop/*.tsbuildinfo
 dist/
 
