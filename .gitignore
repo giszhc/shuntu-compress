@@ -8,6 +8,7 @@ apps/desktop/release-*/
 apps/desktop/dist-*/
 apps/desktop/*.tsbuildinfo
 dist/
+.electron-dist/
 
 # 测试产物
 apps/desktop/test-results/
