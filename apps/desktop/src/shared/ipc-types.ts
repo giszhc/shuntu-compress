@@ -176,6 +176,8 @@ export interface AppApi {
   checkUpdate(): Promise<UpdateCheckResult>;
   /** 下载并安装更新（内部走静默安装后退出） */
   installUpdate(): Promise<void>;
+  /** 用系统浏览器打开外部链接（官网等） */
+  openExternal(url: string): Promise<void>;
   // 事件订阅（返回取消订阅函数）
   onScanProgress(cb: (e: ScanProgressEvent) => void): () => void;
   onTaskProgress(cb: (e: TaskProgressEvent) => void): () => void;
@@ -212,7 +214,8 @@ export const IPC = {
   windowIsMaximized: "window:isMaximized",
   appLog: "app:log",
   appCheckUpdate: "app:checkUpdate",
-  appInstallUpdate: "app:installUpdate"
+  appInstallUpdate: "app:installUpdate",
+  appOpenExternal: "app:openExternal"
 } as const;
 
 /** IPC 事件 channel 常量（主进程 → 渲染进程推送） */

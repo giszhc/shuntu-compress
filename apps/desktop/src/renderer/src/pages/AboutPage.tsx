@@ -4,6 +4,7 @@
 import { useEffect, useState } from "react";
 import {
   FolderOpen,
+  Globe,
   Heart,
   Info,
   Lock,
@@ -129,6 +130,22 @@ export function AboutPage(): React.JSX.Element {
                   icon={<Mail size={16} />}
                   label="联系邮箱"
                   value={<a href="mailto:shuntool@163.com">shuntool@163.com</a>}
+                  isLink
+                />
+                <InfoRow
+                  icon={<Globe size={16} />}
+                  label="官方网站"
+                  value={
+                    <a
+                      href="#"
+                      onClick={e => {
+                        e.preventDefault();
+                        void window.app.openExternal("https://giszhc.github.io/shuntu-compress");
+                      }}
+                    >
+                      giszhc.github.io/shuntu-compress
+                    </a>
+                  }
                   isLink
                 />
               </div>

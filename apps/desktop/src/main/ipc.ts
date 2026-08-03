@@ -1,7 +1,8 @@
 /**
  * IPC 注册：所有 handler 先经 validate 校验，再调 service。
  */
-import { BrowserWindow, app, ipcMain, nativeTheme } from "electron";
+import { BrowserWindow, app, ipcMain, nativeTheme, shell } from "electron";
+import { ConfigError } from "@giszhc/vips-thumbnail-core";
 import { IPC, IPC_EVENTS } from "../shared/ipc-types";
 import type { DialogService } from "./services/dialogService";
 import type { ProcessService } from "./services/processService";
@@ -95,6 +96,12 @@ export function registerIpc(services: Services): void {
   );
   ipcMain.handle(IPC.appCheckUpdate, () => services.update.check());
   ipcMain.handle(IPC.appInstallUpdate, () => services.update.install());
+  ipcMain.handle(IPC.appOpenExternal, (_event, raw) => {
+    if (typeof raw !== "string" || !/^https?:\/\//i.test(raw)) {
+      throw new ConfigError("仅支持打开 http/https 链接");
+    }
+    return shell.openExternal(raw);
+  });
   ipcMain.handle(IPC.windowControl, (event, raw) => {
     const { action } = validateWindowControl(raw);
     const window = BrowserWindow.fromWebContents(event.sender);

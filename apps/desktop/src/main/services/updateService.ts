@@ -97,6 +97,9 @@ export interface UpdateServiceCallbacks {
   onStatus: (event: UpdateStatusEvent) => void;
 }
 
+/** 官网地址（docs 部署的 GitHub Pages） */
+export const OFFICIAL_SITE_URL = "https://giszhc.github.io/shuntu-compress";
+
 export class UpdateService {
   private constructor(private readonly callbacks: UpdateServiceCallbacks) {}
 
@@ -153,9 +156,10 @@ export class UpdateService {
     }
   }
 
-  /** 下载并静默安装新版本（Windows NSIS /S；macOS 不支持自动安装）。
-   *  Gitee raw CDN 偶尔对本机出口 IP 做访问频率限制（HTTP 403），
-   *  这种情况下自动下载会失败 → 自动回退到浏览器打开 Gitee 文件页让用户手动下载。 */
+/**
+ * 下载并静默安装新版本（Windows NSIS /S；macOS 不支持自动安装）。
+ *  Gitee raw CDN 偶尔对本机出口 IP 做访问频率限制（HTTP 403），
+ *  自动下载会失败 → 提示版本过旧并打开官网让用户重新下载。 */
   async install(): Promise<void> {
     if (process.platform !== "win32") {
       throw new Error("当前平台暂不支持自动安装，请前往官网手动下载");
@@ -188,25 +192,20 @@ export class UpdateService {
         app.quit();
       }, 800);
     } catch (err) {
-      // 自动下载失败（Gitee CDN 限流等）：回退到浏览器下载
+      // 自动下载失败（Gitee CDN 限流等）：提示版本过旧 + 打开官网重新下载
       const message = err instanceof Error ? err.message : "下载更新失败";
       const isCdnLimit = /HTTP\s*403|HTTP\s*429|ENOTFOUND|ETIMEDOUT|ECONNRESET/i.test(message);
       logInfo("update", `自动下载失败（${message}），isCdnLimit=${isCdnLimit}`);
-      if (isCdnLimit && result.downloadUrl) {
+      if (isCdnLimit) {
         try {
-          // raw 直链 → 文件详情页：浏览器下载不受 CDN 频率限制
-          const pageUrl = result.downloadUrl.replace(
-            "/raw/main/",
-            "/tree/main/"
-          );
-          await shell.openExternal(pageUrl);
-          logInfo("update", `已打开浏览器下载页：${pageUrl}`);
-          throw new Error("已打开浏览器下载页，请在浏览器中下载安装");
+          await shell.openExternal(OFFICIAL_SITE_URL);
+          logInfo("update", `已打开官网：${OFFICIAL_SITE_URL}`);
         } catch (openErr) {
-          // shell.openExternal 失败（极少）——抛出原始下载错误
-          if (openErr instanceof Error && openErr.message.includes("已打开")) throw openErr;
-          throw err;
+          logInfo("update", `打开官网失败：${openErr instanceof Error ? openErr.message : String(openErr)}`);
         }
+        throw new Error(
+          `当前版本过旧，自动更新暂不可用。已为你打开官网（${OFFICIAL_SITE_URL}），请下载最新版本重新安装。`
+        );
       }
       throw err;
     }

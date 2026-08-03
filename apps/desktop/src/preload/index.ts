@@ -51,6 +51,7 @@ const api: AppApi = {
 
   checkUpdate: () => ipcRenderer.invoke(IPC.appCheckUpdate),
   installUpdate: () => ipcRenderer.invoke(IPC.appInstallUpdate),
+  openExternal: (url: string) => ipcRenderer.invoke(IPC.appOpenExternal, url),
 
   onScanProgress: cb => subscribe(IPC_EVENTS.scanProgress, cb),
   onTaskProgress: cb => subscribe(IPC_EVENTS.taskProgress, cb),
