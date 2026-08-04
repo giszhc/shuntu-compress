@@ -75,6 +75,10 @@ if (!fs.existsSync(path.join(ELECTRON_DIST, "electron.exe"))) {
   console.log(`[dist:safe] 复用已解压的 electron：${ELECTRON_DIST}`);
 }
 
+// 3.5 重新编译最新代码（dist:win:safe 必须显式 build，否则 electron-builder 会用旧的 out/ 产物）
+console.log(`[dist:safe] 重新编译 renderer/main（electron-vite build）…`);
+run(`pnpm build`);
+
 // 4. 执行 electron-builder（跳过 zip 解压 + 全新输出目录）
 run(`npx electron-builder --win --x64 --config electron-builder.yml -c.electronDist="${ELECTRON_DIST}" -c.directories.output="${DIST_DIR}"`);
 
