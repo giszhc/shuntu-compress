@@ -177,7 +177,8 @@ export class UpdateService {
         hasUpdate: false,
         currentVersion,
         latestVersion: currentVersion,
-        downloadUrl: undefined
+        downloadUrl: undefined,
+        error: message
       };
     }
   }

@@ -3,7 +3,7 @@
  */
 import { existsSync } from "node:fs";
 import path from "node:path";
-import { BrowserWindow, Menu, Tray, app, nativeImage, nativeTheme, shell } from "electron";
+import { BrowserWindow, Menu, Notification, Tray, app, dialog, nativeImage, nativeTheme, shell } from "electron";
 import { IPC_EVENTS, type Settings } from "../shared/ipc-types";
 import { registerIpc, sendToAll } from "./ipc";
 import { DialogService } from "./services/dialogService";
@@ -165,7 +165,31 @@ function createTray(): void {
           label: "检查更新",
           click: () => {
             showMainWindow();
-            void updateService.check();
+            void (async () => {
+              // 托盘入口的检查更新：结果用原生对话框提示（不依赖渲染层弹窗，保证必有反馈）
+              try {
+                new Notification({ title: "瞬图优化", body: "正在检查更新…" }).show();
+              } catch {
+                // 通知不可用时忽略，结果仍会用对话框提示
+              }
+              const result = await updateService.check();
+              if (result.error) {
+                dialog.showMessageBox({
+                  type: "error",
+                  title: "检查更新",
+                  message: "检查更新失败",
+                  detail: result.error
+                });
+              } else if (!result.hasUpdate) {
+                dialog.showMessageBox({
+                  type: "info",
+                  title: "检查更新",
+                  message: "当前已是最新版本",
+                  detail: `瞬图优化 v${result.currentVersion}`
+                });
+              }
+              // 有更新：update:status 已推送 available，渲染层全局 UpdateModal 会弹出确认框
+            })();
           }
         },
         { type: "separator" },

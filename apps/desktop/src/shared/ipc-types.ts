@@ -176,6 +176,8 @@ export interface UpdateCheckResult {
   notes?: string;
   /** 安装包下载地址（raw 直链） */
   downloadUrl?: string;
+  /** 检查失败时的错误信息（成功时为空） */
+  error?: string;
 }
 
 /** 更新流程状态（主进程 → 渲染进程推送） */
