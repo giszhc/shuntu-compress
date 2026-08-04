@@ -4,7 +4,7 @@
  * 版本源约定（与 scripts/publish-application-to-gitee.mjs 一致）：
  *   仓库 giszhc/application-software 的 <GITEE_SUBDIR>/latest.json
  *   {
- *     "version": "1.1.0",
+ *     "version": "1.2.0",
  *     "notes": "更新说明",
  *     "url": "<Windows exe raw 直链>",
  *     "urlMacArm64": "<macOS Apple 芯片 dmg raw 直链>",

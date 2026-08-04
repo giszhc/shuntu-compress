@@ -18,7 +18,7 @@ const data = {
 };
 
 const meta = {
-  version: "1.1.1",
+  version: "1.2.0",
   platform: "Windows",
   time: "2026年8月3日星期一 15:47:23"
 };
@@ -43,7 +43,7 @@ describe("buildFeedbackEmailHtml", () => {
     expect(html).toContain("小李");
     expect(html).toContain("li@example.com");
     expect(html).toContain("第一行");
-    expect(html).toContain("v1.1.1");
+    expect(html).toContain("v1.2.0");
     expect(html).toContain("Windows");
     expect(html).toContain("2026年8月3日星期一 15:47:23");
   });
