@@ -2,8 +2,12 @@
    所有选择器带 .page 前缀提升特异性，避免被 global.css 的同名规则覆盖
    （vite 打包后 global.css 排在后面，相同特异性时后者生效）。 */
 
-/* 页面顶部标题区 */
+/* 页面顶部标题区（副标题与标题同行，参考历史页排版） */
 .page .settings-header {
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+  flex-wrap: wrap;
   margin-bottom: 22px;
 }
 
@@ -11,10 +15,12 @@
   font-size: 22px;
   font-weight: 700;
   color: var(--text);
-  margin: 0 0 6px;
+  margin: 0;
 }
 
 .page .settings-header .subtitle {
+  flex: 1;
+  min-width: 200px;
   font-size: 13px;
   color: var(--text-secondary);
   margin: 0;
