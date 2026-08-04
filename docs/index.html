@@ -512,16 +512,12 @@
               <div class="plat-name">Windows 安装包</div>
               <div class="plat-sub">支持 x64 · 中文安装界面 · v1.2.0</div>
               <div class="plat-btns">
-                <a class="btn btn-primary" href="https://gitee.com/giszhc/application-software/raw/main/%E7%9E%AC%E5%9B%BE%E5%8E%8B%E7%BC%A9/shuntu-desktop-windows.zip">
+                <a class="btn btn-primary" href="https://gitee.com/giszhc/application-software/raw/main/%E7%9E%AC%E5%9B%BE%E5%8E%8B%E7%BC%A9/shuntu-desktop.exe">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 12 5 5 5-5"/><path d="M5 21h14"/></svg>
-                  下载 Windows 版（ZIP）
-                </a>
-                <a class="btn btn-light" href="https://gitee.com/giszhc/application-software/raw/main/%E7%9E%AC%E5%9B%BE%E5%8E%8B%E7%BC%A9/shuntu-desktop.exe">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 12 5 5 5-5"/><path d="M5 21h14"/></svg>
-                  下载 EXE 安装包
+                  下载 Windows 版
                 </a>
               </div>
-              <div class="plat-meta">v1.2.0 · ZIP 版免浏览器拦截，解压后运行安装程序；EXE 提示危险时点「仍然下载」即可</div>
+              <div class="plat-meta">v1.2.0 · 首次运行会自动下载约 40 MB 压缩引擎</div>
             </div>
             <div class="dl-card mac reveal" style="--d:.18s">
               <div class="os-ico">
@@ -641,7 +637,7 @@
       var isWin = /Win/i.test(ua);
       var dlWin = document.getElementById('dlWin');
       var dlMac = document.getElementById('dlMac');
-      var winUrl = 'https://gitee.com/giszhc/application-software/raw/main/%E7%9E%AC%E5%9B%BE%E5%8E%8B%E7%BC%A9/shuntu-desktop-windows.zip';
+      var winUrl = 'https://gitee.com/giszhc/application-software/raw/main/%E7%9E%AC%E5%9B%BE%E5%8E%8B%E7%BC%A9/shuntu-desktop.exe';
       var macArmUrl = 'https://gitee.com/giszhc/application-software/raw/main/%E7%9E%AC%E5%9B%BE%E5%8E%8B%E7%BC%A9/shuntu-desktop-arm64.dmg';
       var macX64Url = 'https://gitee.com/giszhc/application-software/raw/main/%E7%9E%AC%E5%9B%BE%E5%8E%8B%E7%BC%A9/shuntu-desktop-x64.dmg';
       if (isMac) {
