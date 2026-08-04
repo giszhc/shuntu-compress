@@ -7,7 +7,7 @@
  *        - Windows: vips-thumbnail-desktop-setup-*.exe  → 重命名为 shuntu-desktop.exe
  *        - macOS:   vips-thumbnail-desktop-*-arm64.dmg  → 重命名为 shuntu-desktop-arm64.dmg（Apple 芯片）
  *        - macOS:   vips-thumbnail-desktop-*-x64.dmg    → 重命名为 shuntu-desktop-x64.dmg（Intel）
- *        - macOS:   （兼容旧命名）vips-thumbnail-desktop-*-universal.dmg → shuntu-desktop.dmg
+ *      （macOS 按芯片分发，不发布 universal 包）
  *   2. 确保本地有 giszhc/application-software 的 git 克隆（没有就 clone）
  *   3. 把安装包拷进仓库的 <GITEE_SUBDIR>（默认「瞬图压缩」）目录
  *   4. git add / commit / push 到 <GITEE_BRANCH>（默认 main）
@@ -67,16 +67,11 @@ if (!fs.existsSync(releaseDir)) {
 const winArtifact = findArtifact(/^vips-thumbnail-desktop-setup-.*\.exe$/);
 const macArmArtifact = findArtifact(/^vips-thumbnail-desktop-.*-arm64\.dmg$/);
 const macX64Artifact = findArtifact(/^vips-thumbnail-desktop-.*-x64\.dmg$/);
-// 兼容旧的 universal 包命名（仅当双架构产物都不存在时兜底）
-const macUniversalArtifact = !macArmArtifact && !macX64Artifact
-  ? findArtifact(/^vips-thumbnail-desktop-.*\.dmg$/)
-  : null;
 
 const toPublish = [];
 if (winArtifact) toPublish.push({ src: winArtifact, dst: 'shuntu-desktop.exe', label: 'Windows' });
 if (macArmArtifact) toPublish.push({ src: macArmArtifact, dst: 'shuntu-desktop-arm64.dmg', label: 'macOS(Apple芯片)' });
 if (macX64Artifact) toPublish.push({ src: macX64Artifact, dst: 'shuntu-desktop-x64.dmg', label: 'macOS(Intel)' });
-if (macUniversalArtifact) toPublish.push({ src: macUniversalArtifact, dst: 'shuntu-desktop.dmg', label: 'macOS(universal)' });
 
 if (toPublish.length === 0) {
   console.error(`[publish:application] release/ 下没有任何安装包（期望 vips-thumbnail-desktop-setup-*.exe 或 *.dmg）。`);
@@ -165,7 +160,7 @@ run(`git -C "${GITEE_LOCAL_DIR}" push origin ${GITEE_BRANCH}`);
 
 log(`完成 ✅ 安装包已推送到 Gitee（${GITEE_SUBDIR}）`);
 log(`Windows 下载：https://gitee.com/giszhc/application-software/raw/main/${encodeURIComponent(GITEE_SUBDIR)}/shuntu-desktop.exe`);
-if (macArmArtifact || macUniversalArtifact) {
+if (macArmArtifact) {
   log(`macOS 下载（Apple 芯片）：https://gitee.com/giszhc/application-software/raw/main/${encodeURIComponent(GITEE_SUBDIR)}/shuntu-desktop-arm64.dmg`);
 }
 if (macX64Artifact) {
