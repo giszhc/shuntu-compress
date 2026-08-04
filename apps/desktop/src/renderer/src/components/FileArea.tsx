@@ -84,8 +84,8 @@ export function FileArea(): React.JSX.Element {
   }, [addPaths]);
 
   const pickDirectory = useCallback(async () => {
-    const dir = await window.app.openDirectory();
-    if (dir) await addPaths([dir]);
+    const dirs = await window.app.openDirectory();
+    if (dirs.length > 0) await addPaths(dirs);
   }, [addPaths]);
 
   const onDrop = useCallback(

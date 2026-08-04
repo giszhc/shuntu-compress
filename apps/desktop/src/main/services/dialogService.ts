@@ -35,16 +35,14 @@ export class DialogService {
     return result.canceled ? [] : result.filePaths;
   }
 
-  async openDirectory(): Promise<string | null> {
+  async openDirectory(): Promise<string[]> {
     const window = this.getWindow();
-    if (!window) return null;
+    if (!window) return [];
     const result = await dialog.showOpenDialog(window, {
       title: "选择文件夹",
-      properties: ["openDirectory"]
+      properties: ["openDirectory", "multiSelections"]
     });
-    return result.canceled || result.filePaths.length === 0
-      ? null
-      : result.filePaths[0];
+    return result.canceled ? [] : result.filePaths;
   }
 
   async pickOutputDirectory(): Promise<string | null> {

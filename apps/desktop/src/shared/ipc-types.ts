@@ -194,7 +194,8 @@ export interface AppApi {
   readonly platform: NodeJS.Platform;
   // 对话框
   openFiles(): Promise<string[]>;
-  openDirectory(): Promise<string | null>;
+  /** 选择文件夹（支持多选，返回所选目录数组） */
+  openDirectory(): Promise<string[]>;
   pickOutputDirectory(): Promise<string | null>;
   // 扫描 / 文件
   scan(request: ScanRequest): Promise<FileEntry[]>;

@@ -166,7 +166,7 @@ function createTray(): void {
           click: () => {
             showMainWindow();
             void (async () => {
-              // 托盘入口的检查更新：结果用原生对话框提示（不依赖渲染层弹窗，保证必有反馈）
+              // 托盘入口的检查更新：结果一律用原生对话框提示（不依赖渲染层弹窗，保证必有反馈）
               try {
                 new Notification({ title: "瞬图优化", body: "正在检查更新…" }).show();
               } catch {
@@ -187,8 +187,33 @@ function createTray(): void {
                   message: "当前已是最新版本",
                   detail: `瞬图优化 v${result.currentVersion}`
                 });
+              } else {
+                // 有更新：原生确认框（不依赖渲染层 UpdateModal，避免事件丢失导致无提示）
+                const { response } = await dialog.showMessageBox({
+                  type: "info",
+                  title: "发现新版本",
+                  message: `发现新版本 v${result.latestVersion}`,
+                  detail:
+                    result.notes ?? "点击「立即更新」下载并安装最新版本。",
+                  buttons: ["立即更新", "稍后再说"],
+                  defaultId: 0,
+                  cancelId: 1
+                });
+                if (response === 0) {
+                  try {
+                    await updateService.install();
+                  } catch (installErr) {
+                    const msg =
+                      installErr instanceof Error ? installErr.message : String(installErr);
+                    dialog.showMessageBox({
+                      type: "error",
+                      title: "更新失败",
+                      message: "更新失败",
+                      detail: msg
+                    });
+                  }
+                }
               }
-              // 有更新：update:status 已推送 available，渲染层全局 UpdateModal 会弹出确认框
             })();
           }
         },
