@@ -8,6 +8,7 @@ export * from "./vips.js";
 export * from "./unzip.js";
 export * from "./download.js";
 export * from "./installer.js";
+export * from "./optimize.js";
 export * from "./process.js";
 export * from "./scan.js";
 export * from "./output.js";

@@ -1,15 +1,21 @@
 /**
  * 任务 store：开始/取消压缩任务、进度、汇总结果。
+ * - 智能优化模式：把 mode 与任务名传给主进程，由主进程按文件格式自动决策参数；
+ * - 完成时缓存 results（供结果弹窗做逐图前后对比）并刷新历史记录。
  */
 import { create } from "zustand";
 import type {
+  FileEntry,
   TaskFinishedEvent,
   TaskProgressEvent,
+  TaskResult,
   TaskSummary
 } from "../../../shared/ipc-types";
 import { useFileStore } from "./fileStore";
+import { useHistoryStore } from "./historyStore";
 import { useSettingsStore } from "./settingsStore";
 import { useUiStore } from "./uiStore";
+import { openFolder } from "../utils/openFolder";
 
 interface TaskState {
   running: boolean;
@@ -19,6 +25,8 @@ interface TaskState {
   taskId: string | null;
   progress: TaskProgressEvent | null;
   summary: TaskSummary | null;
+  /** 最近一次任务的逐项结果（结果弹窗「前后对比」列表数据源） */
+  results: TaskResult[] | null;
   showResult: boolean;
 
   start(): Promise<void>;
@@ -28,6 +36,26 @@ interface TaskState {
   closeResult(): void;
 }
 
+/** 为历史记录生成人类可读的任务名 */
+function buildTaskName(entries: FileEntry[]): string {
+  if (entries.length === 0) return "图片优化";
+  if (entries.length === 1) {
+    const entry = entries[0];
+    if (entry.fromDir) {
+      return entry.rootDir.split(/[\\/]/).filter(Boolean).pop() ?? entry.fileName;
+    }
+    return entry.fileName;
+  }
+  // 多文件：全部来自同一文件夹时用文件夹名，否则用总数
+  const dirs = new Set(entries.filter(e => e.fromDir).map(e => e.rootDir));
+  if (dirs.size === 1) {
+    const root = dirs.values().next().value as string;
+    const dirName = root.split(/[\\/]/).filter(Boolean).pop() ?? root;
+    return `${dirName}（${entries.length} 张）`;
+  }
+  return `图片优化（${entries.length} 张）`;
+}
+
 export const useTaskStore = create<TaskState>((set, get) => ({
   running: false,
   canceling: false,
@@ -35,6 +63,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
   taskId: null,
   progress: null,
   summary: null,
+  results: null,
   showResult: false,
 
   async start() {
@@ -66,22 +95,24 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       return;
     }
 
-    // 2. 组装任务请求
+    // 2. 组装任务请求（智能模式由主进程逐文件决策，手动模式用面板参数）
     const { params } = useSettingsStore.getState();
     const request = {
       entries: files.entries,
+      name: buildTaskName(files.entries),
       options: {
         quality: params.quality,
         size: params.size,
         ext: params.ext
       },
+      smart: params.mode === "smart",
       outputDir: params.outputDir,
       mode: (params.preserveStructure ? "preserve" : "flat") as "preserve" | "flat",
       concurrency: params.concurrency
     };
 
     files.markPendingAll();
-    set({ running: true, canceling: false, progress: null, summary: null });
+    set({ running: true, canceling: false, progress: null, summary: null, results: null });
     try {
       const { taskId } = await window.app.startTask(request);
       set({ taskId });
@@ -137,15 +168,19 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       progress: prev
         ? { ...prev, percent: 100, done: total }
         : { taskId: e.taskId, done: total, total, percent: 100, currentFile: "" },
-      summary: e.summary
+      summary: e.summary,
+      results: e.results
     });
+    // 刷新历史记录（累计优化数量 / 累计节省空间）
+    void useHistoryStore.getState().refresh();
     window.setTimeout(() => {
       // 期间若已启动新任务（finishing 被重置）则不再弹窗
       if (!get().finishing) return;
       set({ finishing: false, showResult: true });
       const { settings } = useSettingsStore.getState();
       if (settings?.openAfterFinish && e.summary.success > 0) {
-        void window.app.openInExplorer(e.summary.outputDir);
+        // 自动打开输出目录：失败时由 openFolder 统一 toast 提示
+        void openFolder(e.summary.outputDir);
       }
     }, 900); // 与 CSS 里 600ms 的进度条过渡匹配：走满动画播完 + 短暂停顿再弹窗
   },

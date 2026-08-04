@@ -137,6 +137,29 @@
   margin-top: 4px;
 }
 
+/* 空状态累计数据条（累计优化张数 / 累计节省空间） */
+.compress-drop-stats {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 18px;
+  border-radius: 999px;
+  background: var(--surface-solid);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-panel);
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.compress-drop-stats .stat strong {
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.compress-drop-stats .dot {
+  color: var(--text-tertiary);
+}
+
 /* 文件列表（添加文件后显示） */
 .compress-file-list {
   flex: 1;
@@ -315,6 +338,92 @@
 
 .compress-params-card .compress-params-hint {
   margin-top: 0;
+}
+
+/* ---------- 优化模式切换（智能优化 / 高级设置） ---------- */
+.compress-mode-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.compress-mode-grid button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--control-bg);
+  border: 1px solid transparent;
+  color: var(--text-secondary);
+  text-align: left;
+  transition: background 140ms ease-out, border-color 140ms ease-out;
+}
+
+.compress-mode-grid button:hover:not(:disabled):not(.active) {
+  background: var(--control-bg-hover);
+}
+
+.compress-mode-grid button.active {
+  background: color-mix(in srgb, var(--accent) 6%, var(--surface-solid));
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+.compress-mode-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: var(--control-bg);
+  color: var(--text-secondary);
+  transition: color 140ms ease-out, background 140ms ease-out;
+}
+
+.compress-mode-grid button.active .compress-mode-icon {
+  background: var(--accent);
+  color: var(--text-on-accent);
+}
+
+.compress-mode-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  margin-top: 2px;
+}
+
+.compress-mode-desc {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  line-height: 1.4;
+}
+
+/* 智能模式说明卡 */
+.compress-smart-card {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--accent) 5%, var(--surface-solid)),
+    var(--surface-solid) 60%
+  );
+}
+
+.compress-smart-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.compress-smart-list {
+  margin: 0;
+  padding-left: 16px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.9;
 }
 
 /* ---------- 控件：滑块（与设置页 .slider 一致：渐变填充 + 白滑块蓝描边） ---------- */

@@ -29,6 +29,7 @@ const api: AppApi = {
 
   scan: (request: ScanRequest) => ipcRenderer.invoke(IPC.fsScan, request),
   thumbnail: (path: string) => ipcRenderer.invoke(IPC.fsThumbnail, path),
+  imageInfo: (path: string) => ipcRenderer.invoke(IPC.fsImageInfo, path),
   openInExplorer: (path: string) => ipcRenderer.invoke(IPC.fsOpenInExplorer, path),
 
   startTask: (request: TaskStartRequest) => ipcRenderer.invoke(IPC.taskStart, request),
@@ -42,6 +43,9 @@ const api: AppApi = {
   getSettings: () => ipcRenderer.invoke(IPC.settingsGet),
   setSettings: (patch: Partial<Settings>) => ipcRenderer.invoke(IPC.settingsSet, patch),
   resetSettings: () => ipcRenderer.invoke(IPC.settingsReset),
+
+  getHistory: () => ipcRenderer.invoke(IPC.historyGet),
+  clearHistory: () => ipcRenderer.invoke(IPC.historyClear),
 
   getVersion: () => ipcRenderer.invoke(IPC.appGetVersion),
   getSystemTheme: () => ipcRenderer.invoke(IPC.appGetSystemTheme),

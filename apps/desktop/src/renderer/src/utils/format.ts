@@ -22,6 +22,15 @@ export function formatSaving(original: number, compressed: number): string {
   return `${sign}${Math.abs(ratio).toFixed(1)}%`;
 }
 
+/** 节省比例正数文案，例如 “88.2%”；无收益返回 “0.0%” */
+export function formatPercent(original: number, compressed: number): string {
+  if (!Number.isFinite(original) || original <= 0 || !Number.isFinite(compressed)) {
+    return "—";
+  }
+  const ratio = Math.max(0, ((original - compressed) / original) * 100);
+  return `${ratio.toFixed(1)}%`;
+}
+
 /** 毫秒 → “x.x 秒 / x 分 x 秒” */
 export function formatDuration(ms: number): string {
   if (!Number.isFinite(ms) || ms < 0) return "—";

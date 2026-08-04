@@ -17,6 +17,7 @@ import {
 import { useCallback, useMemo, useRef, useState } from "react";
 import type { FileEntry } from "../../../shared/ipc-types";
 import { useFileStore } from "../stores/fileStore";
+import { useHistoryStore } from "../stores/historyStore";
 import { useTaskStore } from "../stores/taskStore";
 import { formatBytes } from "../utils/format";
 import { DirRow, FileRow } from "./FileRow";
@@ -39,6 +40,7 @@ export function FileArea(): React.JSX.Element {
   const removeDir = useFileStore(s => s.removeDir);
   const clear = useFileStore(s => s.clear);
   const running = useTaskStore(s => s.running);
+  const history = useHistoryStore(s => s.summary);
 
   const [dragOver, setDragOver] = useState(false);
   const dragDepth = useRef(0);
@@ -210,13 +212,24 @@ export function FileArea(): React.JSX.Element {
           <h3 className="compress-drop-title">
             {scanning
               ? `正在扫描图片…${scannedCount > 0 ? `已发现 ${scannedCount} 张` : ""}`
-              : "拖入图片或文件夹开始压缩"}
+              : "拖入图片开始优化"}
           </h3>
           <p className="compress-drop-desc">
             支持 JPG / PNG / WebP / GIF / TIFF / BMP / SVG 等格式，可拖入多个文件或整个文件夹
             <br />
-            <span className="sub">输出保存到独立目录，绝不覆盖原图</span>
+            <span className="sub">智能优化自动选格式 · 输出独立目录 · 绝不覆盖原图</span>
           </p>
+          {!scanning && history && (history.totalCount > 0 || history.totalSaved > 0) && (
+            <div className="compress-drop-stats">
+              <span className="stat">
+                累计优化 <strong>{history.totalCount}</strong> 张
+              </span>
+              <span className="dot">·</span>
+              <span className="stat">
+                累计节省 <strong>{formatBytes(history.totalSaved)}</strong>
+              </span>
+            </div>
+          )}
           {!scanning && (
             <div className="compress-drop-actions">
               <button

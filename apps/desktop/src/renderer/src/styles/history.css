@@ -1,0 +1,233 @@
+/* ---------- 历史优化记录页 ---------- */
+.history-page {
+  max-width: 760px;
+}
+
+.history-header {
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.history-header .subtitle {
+  flex: 1;
+  min-width: 200px;
+}
+
+.history-clear {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: var(--control-bg);
+  border: 1px solid var(--border);
+  transition: background 140ms ease-out, color 140ms ease-out, border-color 140ms ease-out;
+}
+
+.history-clear:hover:not(:disabled) {
+  background: var(--control-bg-hover);
+}
+
+.history-clear.danger {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 40%, transparent);
+  background: color-mix(in srgb, var(--danger) 8%, transparent);
+}
+
+/* 累计统计卡 */
+.history-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 22px;
+}
+
+.history-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 16px 18px;
+  border-radius: 12px;
+  background: var(--surface-solid);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-panel);
+}
+
+.history-stat-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 6px;
+}
+
+.history-stat-icon--blue {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.history-stat-icon--green {
+  color: var(--success);
+  background: color-mix(in srgb, var(--success) 12%, transparent);
+}
+
+.history-stat-icon--purple {
+  color: #8b5cf6;
+  background: color-mix(in srgb, #8b5cf6 12%, transparent);
+}
+
+.history-stat .k {
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+.history-stat .v {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 记录列表 */
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.history-card {
+  padding: 0;
+}
+
+.history-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+}
+
+.history-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.history-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.history-time {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--text-tertiary);
+  margin-top: 4px;
+  font-variant-numeric: tabular-nums;
+}
+
+.history-sizes {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.history-sizes .before {
+  color: var(--text-tertiary);
+  text-decoration: line-through;
+}
+
+.history-sizes .after {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.history-sizes .history-arrow {
+  color: var(--text-tertiary);
+}
+
+.history-saving {
+  min-width: 84px;
+  text-align: right;
+  color: var(--success);
+  font-weight: 700;
+}
+
+.history-open {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-tertiary);
+  background: var(--control-bg);
+  flex-shrink: 0;
+  transition: background 120ms ease-out, color 120ms ease-out;
+}
+
+.history-open:hover:not(:disabled) {
+  background: var(--control-bg-hover);
+  color: var(--accent);
+}
+
+/* 空状态 */
+.history-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 64px 24px;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.history-empty-icon {
+  width: 72px;
+  height: 72px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--control-bg);
+  color: var(--text-tertiary);
+  margin-bottom: 4px;
+}
+
+.history-empty h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
+}
+
+.history-empty p {
+  font-size: 12px;
+  margin: 0;
+}
+
+@media (max-width: 640px) {
+  .history-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .history-row {
+    flex-wrap: wrap;
+  }
+}

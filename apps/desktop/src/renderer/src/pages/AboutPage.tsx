@@ -60,13 +60,13 @@ export function AboutPage(): React.JSX.Element {
       <div className="about-page">
         <header className="settings-header">
           <h1>关于</h1>
-          <p className="subtitle">了解瞬图压缩的功能与支持信息</p>
+          <p className="subtitle">了解瞬图优化的功能与支持信息</p>
         </header>
 
         <div className="about-main">
           <div className="about-left">
-            <img className="about-app-icon" src={appIcon} alt="瞬图压缩" />
-            <h2 className="about-app-name">瞬图压缩</h2>
+            <img className="about-app-icon" src={appIcon} alt="瞬图优化" />
+            <h2 className="about-app-name">瞬图优化</h2>
             <div className="about-app-version">v{version}</div>
             <button
               type="button"
@@ -78,9 +78,9 @@ export function AboutPage(): React.JSX.Element {
               {checking ? "正在检查…" : "检查更新"}
             </button>
             <p className="about-app-desc">
-              高效的本地图片压缩工具
+              让每一张图片更轻、更快、更专业
               <br />
-              支持 JPG / PNG / WebP / GIF / TIFF / BMP / SVG 批量压缩，等比缩放与格式转换
+              瞬图优化帮助设计师、开发者、商家压缩优化图片，节省存储空间，提升网络加载速度。
             </p>
           </div>
 
@@ -172,7 +172,7 @@ export function AboutPage(): React.JSX.Element {
               </h2>
               <div className="settings-card about-card-pad">
                 <p className="about-section-desc">
-                  感谢所有支持和使用瞬图压缩的用户，你的反馈让我们变得更好！
+                  感谢所有支持和使用瞬图优化的用户，你的反馈让我们变得更好！
                 </p>
               </div>
             </section>
@@ -180,7 +180,7 @@ export function AboutPage(): React.JSX.Element {
         </div>
 
         <footer className="about-footer">
-          瞬图压缩 v{version || "1.0.0"} ｜ 版权所有 © 2026 giszhc ｜ 让图片压缩更简单、更安全、更高效
+          瞬图优化 v{version || "1.0.0"} ｜ 版权所有 © 2026 giszhc ｜ 让图片优化更简单、更安全、更高效
         </footer>
       </div>
     </div>

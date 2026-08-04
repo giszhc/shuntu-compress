@@ -49,7 +49,7 @@ export function formatFeedbackTime(date: Date = new Date()): string {
 
 /** 邮件主题 */
 export function buildFeedbackSubject(name: string): string {
-  return `【瞬图压缩】用户反馈：${name}`;
+  return `【瞬图优化】用户反馈：${name}`;
 }
 
 /** HTML 版正文（官网风格：渐变头部 + 卡片 + 内联样式） */
@@ -65,7 +65,7 @@ export function buildFeedbackEmailHtml(
 
   // 邮件客户端对 SVG 支持差，用 PNG data URI 内联最通用；拿不到图标时用品牌色"瞬"字兜底
   const logoMark = logoDataUri
-    ? `<img src="${logoDataUri}" alt="瞬图压缩" width="56" height="56" style="display:block;width:56px;height:56px;border:0;" />`
+    ? `<img src="${logoDataUri}" alt="瞬图优化" width="56" height="56" style="display:block;width:56px;height:56px;border:0;" />`
     : `<span style="display:inline-block;font-size:28px;line-height:56px;font-weight:800;color:#ffffff;">瞬</span>`;
 
   return `<!DOCTYPE html>
@@ -73,7 +73,7 @@ export function buildFeedbackEmailHtml(
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>瞬图压缩 · 用户反馈</title>
+<title>瞬图优化 · 用户反馈</title>
 </head>
 <body style="margin:0;padding:0;background:#eef1fb;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#eef1fb;padding:24px 12px;">
@@ -89,7 +89,7 @@ export function buildFeedbackEmailHtml(
                   ${logoMark}
                 </td>
                 <td style="padding-left:16px;vertical-align:middle;">
-                  <div style="color:#ffffff;font-size:23px;font-weight:700;line-height:1.3;">瞬图压缩 · 用户反馈</div>
+                  <div style="color:#ffffff;font-size:23px;font-weight:700;line-height:1.3;">瞬图优化 · 用户反馈</div>
                   <div style="color:rgba(255,255,255,0.85);font-size:13px;line-height:1.5;letter-spacing:0.5px;">SHUNTU DESKTOP FEEDBACK</div>
                 </td>
               </tr>
@@ -138,7 +138,7 @@ export function buildFeedbackEmailHtml(
         <tr>
           <td style="padding:26px 48px 40px;">
             <div style="color:#94a3b8;font-size:13px;text-align:center;font-family:-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;">
-              瞬图压缩 © 2026 giszhc ·
+              瞬图优化 © 2026 giszhc ·
               <a href="${FEEDBACK_SITE_URL}" style="color:#4f46e5;text-decoration:underline;">官方网站</a>
               · 让图片压缩更简单、更安全、更高效
             </div>
@@ -158,7 +158,7 @@ export function buildFeedbackEmailText(
   meta: FeedbackEmailMeta
 ): string {
   return [
-    `【瞬图压缩】用户反馈`,
+    `【瞬图优化】用户反馈`,
     "",
     `称呼：${data.name}`,
     `邮箱：${data.email}`,

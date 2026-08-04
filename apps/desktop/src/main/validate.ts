@@ -99,7 +99,18 @@ export function validateTaskStartRequest(raw: unknown): TaskStartRequest {
   if (request.outputDir !== null && request.outputDir !== undefined) {
     outputDir = assertAbsolutePath(request.outputDir, "输出目录");
   }
-  return { entries, options, outputDir, mode, concurrency };
+  return {
+    entries,
+    options,
+    outputDir,
+    mode,
+    concurrency,
+    name:
+      typeof request.name === "string" && request.name.trim()
+        ? request.name.trim().slice(0, 60)
+        : undefined,
+    smart: request.smart === true
+  };
 }
 
 const THEME_VALUES = ["system", "light", "dark"] as const;

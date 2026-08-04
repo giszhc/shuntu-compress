@@ -8,6 +8,7 @@ import appIcon from "../assets/app-icon.png";
 
 const NAV: Array<{ page: Page; label: string }> = [
   { page: "main", label: "压缩" },
+  { page: "history", label: "历史" },
   { page: "settings", label: "设置" },
   { page: "about", label: "关于" }
 ];
@@ -35,7 +36,7 @@ export function Titlebar(): React.JSX.Element {
     <header className={isMac ? "titlebar titlebar--mac" : "titlebar"}>
       <div className="titlebar-title">
         <img className="titlebar-logo" src={appIcon} alt="" aria-hidden />
-        瞬图
+        瞬图优化
       </div>
       <nav className="titlebar-nav">
         {NAV.map(item => (

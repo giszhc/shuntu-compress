@@ -2,7 +2,7 @@
   "name": "shuntu-desktop",
   "version": "1.1.1",
   "private": true,
-  "description": "瞬图压缩 · 桌面端",
+  "description": "瞬图优化 · 桌面端",
   "scripts": {
     "dev": "pnpm --filter vips-thumbnail-desktop dev",
     "build": "pnpm --filter vips-thumbnail-desktop build",

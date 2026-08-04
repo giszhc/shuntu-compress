@@ -1,5 +1,5 @@
 appId: com.giszhc.vips-thumbnail-desktop
-productName: 瞬图压缩
+productName: 瞬图优化
 copyright: Copyright © 2026 giszhc
 
 electronDownload:
@@ -56,7 +56,7 @@ mac:
       to: tray-icon@2x.png
 
 dmg:
-  title: "瞬图压缩 ${version}"
+  title: "瞬图优化 ${version}"
   # UDBZ = bzip2 压缩，比默认 UDZO(zlib) 体积更小
   format: UDBZ
   contents:
@@ -73,7 +73,7 @@ nsis:
   allowToChangeInstallationDirectory: true
   createDesktopShortcut: true
   createStartMenuShortcut: true
-  shortcutName: 瞬图压缩
+  shortcutName: 瞬图优化
   # 中文安装界面
   installerLanguages:
     - zh_CN

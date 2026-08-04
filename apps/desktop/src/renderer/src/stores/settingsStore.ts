@@ -11,7 +11,11 @@ import type {
   ThemePref
 } from "../../../shared/ipc-types";
 
+/** 压缩模式：智能优化（自动决策）/ 高级设置（手动参数） */
+export type OptimizeMode = "smart" | "manual";
+
 export interface SessionParams {
+  mode: OptimizeMode;
   quality: number;
   size: number | null;
   ext: OutputExt | null;
@@ -36,6 +40,7 @@ interface SettingsState {
 }
 
 const FALLBACK_PARAMS: SessionParams = {
+  mode: "smart",
   quality: 85,
   size: null,
   ext: null,
@@ -56,6 +61,7 @@ function applyThemeToDom(theme: ResolvedTheme): void {
 
 function paramsFromSettings(s: Settings): SessionParams {
   return {
+    mode: "smart",
     quality: s.quality,
     size: s.size,
     ext: s.ext,

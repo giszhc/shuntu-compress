@@ -7,12 +7,12 @@ import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { launchApp, makeTestImages } from "./helpers";
 
-test.describe("瞬图压缩桌面端", () => {
+test.describe("瞬图优化桌面端", () => {
   test("启动后显示空状态与标题栏", async () => {
     const { app, page } = await launchApp();
     try {
       await expect(page.locator(".titlebar-title")).toContainText("瞬图");
-      await expect(page.locator(".empty-state h3")).toContainText("拖入图片");
+      await expect(page.locator(".compress-drop-title")).toContainText("拖入图片");
       await expect(page.locator(".action-bar .btn-primary")).toBeDisabled();
     } finally {
       await app.close();
@@ -37,7 +37,7 @@ test.describe("瞬图压缩桌面端", () => {
 
       // 等待结果面板（真实 vips 处理）
       await expect(page.locator(".result-panel")).toBeVisible({ timeout: 90_000 });
-      await expect(page.locator(".result-panel h2")).toContainText("压缩完成");
+      await expect(page.locator(".result-panel h2")).toContainText("图片优化完成");
 
       // 校验输出目录存在且不覆盖原图
       const snapshot = (await page.evaluate(() => window.__e2e!.getSnapshot())) as {
@@ -64,8 +64,10 @@ test.describe("瞬图压缩桌面端", () => {
       await expect(page.locator(".page h1")).toContainText("设置");
       await page.locator(".titlebar-nav button", { hasText: "关于" }).click();
       await expect(page.locator(".page h1")).toContainText("关于");
+      await page.locator(".titlebar-nav button", { hasText: "历史" }).click();
+      await expect(page.locator(".page h1")).toContainText("历史优化记录");
       await page.locator(".titlebar-nav button", { hasText: "压缩" }).click();
-      await expect(page.locator(".empty-state, .file-list").first()).toBeVisible();
+      await expect(page.locator(".compress-drop-empty, .compress-file-list").first()).toBeVisible();
     } finally {
       await app.close();
     }

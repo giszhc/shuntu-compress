@@ -129,7 +129,7 @@ const rawBase = `https://gitee.com/giszhc/application-software/raw/main/${encode
 if (latestVersion) {
   const latestJson = {
     version: latestVersion,
-    notes: `瞬图压缩 v${latestVersion} 更新`,
+    notes: `瞬图优化 v${latestVersion} 更新`,
     url: `${rawBase}/shuntu-desktop.exe`,
     urlMacArm64: `${rawBase}/shuntu-desktop-arm64.dmg`,
     urlMacX64: `${rawBase}/shuntu-desktop-x64.dmg`
@@ -158,7 +158,7 @@ if (!diffStat) {
 }
 
 const platforms = toPublish.map((p) => p.label).join('+');
-const commitMsg = `publish: 更新瞬图压缩安装包 (${platforms})`;
+const commitMsg = `publish: 更新瞬图优化安装包 (${platforms})`;
 run(`git -C "${GITEE_LOCAL_DIR}" commit -m "${commitMsg}"`);
 log('已提交，开始推送…');
 run(`git -C "${GITEE_LOCAL_DIR}" push origin ${GITEE_BRANCH}`);

@@ -8,6 +8,7 @@ import { IPC_EVENTS, type Settings } from "../shared/ipc-types";
 import { registerIpc, sendToAll } from "./ipc";
 import { DialogService } from "./services/dialogService";
 import { FeedbackService } from "./services/feedbackService";
+import { HistoryService } from "./services/historyService";
 import { ProcessService } from "./services/processService";
 import { SettingsService } from "./services/settingsService";
 import { ThumbnailService } from "./services/thumbnailService";
@@ -64,6 +65,7 @@ let tray: Tray | null = null;
 let isQuitting = false;
 
 const settingsService = new SettingsService();
+const historyService = new HistoryService();
 const thumbnailService = new ThumbnailService();
 const dialogService = new DialogService(() => mainWindow);
 const vipsService = new VipsService(
@@ -77,7 +79,20 @@ const processService = new ProcessService(vipsService, {
   onScanProgress: event => sendToAll(IPC_EVENTS.scanProgress, event),
   onTaskProgress: event => sendToAll(IPC_EVENTS.taskProgress, event),
   onTaskItemDone: event => sendToAll(IPC_EVENTS.taskItemDone, event),
-  onTaskFinished: event => sendToAll(IPC_EVENTS.taskFinished, event)
+  onTaskFinished: event => {
+    sendToAll(IPC_EVENTS.taskFinished, event);
+    // 持久化历史记录：仅成功处理了图片才记录（全失败无优化价值）
+    if (event.summary.success > 0) {
+      historyService.add({
+        taskName: event.name ?? "图片优化",
+        fileCount: event.summary.success,
+        beforeSize: event.summary.originalTotal,
+        afterSize: event.summary.compressedTotal,
+        durationMs: event.summary.durationMs,
+        outputDir: event.summary.outputDir
+      });
+    }
+  }
 });
 const updateService = UpdateService.create({
   onStatus: event => sendToAll(IPC_EVENTS.updateStatus, event)
@@ -133,7 +148,7 @@ function createTray(): void {
   if (process.platform !== "win32" && process.platform !== "darwin") return;
   const image = nativeImage.createFromPath(resolveTrayIconPath());
   tray = new Tray(image);
-  tray.setToolTip("瞬图压缩");
+  tray.setToolTip("瞬图优化");
   const rebuildMenu = () => {
     if (!tray) return;
     // 每项之间用分隔线隔开（用户要求：不要挤在一起）
@@ -282,6 +297,7 @@ app.whenReady().then(() => {
     thumbnail: thumbnailService,
     dialog: dialogService,
     settings: settingsService,
+    history: historyService,
     update: updateService,
     feedback: feedbackService
   });

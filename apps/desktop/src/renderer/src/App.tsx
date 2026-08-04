@@ -11,8 +11,10 @@ import { Toasts } from "./components/Toasts";
 import { UpdateModal } from "./components/UpdateModal";
 import { VipsInstallModal } from "./components/VipsInstallModal";
 import { AboutPage } from "./pages/AboutPage";
+import { HistoryPage } from "./pages/HistoryPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { useFileStore } from "./stores/fileStore";
+import { useHistoryStore } from "./stores/historyStore";
 import { useSettingsStore } from "./stores/settingsStore";
 import { useTaskStore } from "./stores/taskStore";
 import { useUiStore } from "./stores/uiStore";
@@ -24,6 +26,7 @@ export function App(): React.JSX.Element {
   // 初始化 + 全局事件订阅（只挂一次）
   useEffect(() => {
     void useSettingsStore.getState().load();
+    void useHistoryStore.getState().load();
 
     const offs = [
       window.app.onSystemTheme(theme => {
@@ -119,6 +122,7 @@ export function App(): React.JSX.Element {
               <ParamsPanel />
             </>
           )}
+          {page === "history" && <HistoryPage />}
           {page === "settings" && <SettingsPage />}
           {page === "about" && <AboutPage />}
         </main>

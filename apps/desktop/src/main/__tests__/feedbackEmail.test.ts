@@ -33,7 +33,7 @@ describe("escapeHtml", () => {
 
 describe("buildFeedbackSubject", () => {
   it("生成主题", () => {
-    expect(buildFeedbackSubject("小李")).toBe("【瞬图压缩】用户反馈：小李");
+    expect(buildFeedbackSubject("小李")).toBe("【瞬图优化】用户反馈：小李");
   });
 });
 

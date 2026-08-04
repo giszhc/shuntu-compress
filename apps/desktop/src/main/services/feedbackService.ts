@@ -138,7 +138,7 @@ export class FeedbackService {
 
     try {
       await transporter.sendMail({
-        from: `"瞬图压缩反馈" <${config.user}>`,
+        from: `"瞬图优化反馈" <${config.user}>`,
         to: config.to,
         subject: buildFeedbackSubject(request.name),
         text: buildFeedbackEmailText(request, meta),

@@ -72,6 +72,10 @@ export interface TaskStartRequest {
   outputDir: string | null;
   mode: OutputMode;
   concurrency: number;
+  /** 任务名称（历史记录展示用；缺省时主进程回退为"图片优化"） */
+  name?: string;
+  /** true = 智能优化模式：主进程按每个文件的格式自动决定质量/格式/尺寸（忽略 options） */
+  smart?: boolean;
 }
 
 export interface TaskProgressEvent {
@@ -103,6 +107,32 @@ export interface TaskFinishedEvent {
   taskId: string;
   summary: TaskSummary;
   results: TaskResult[];
+  /** 任务名称（与 TaskStartRequest.name 对应，历史记录使用） */
+  name?: string;
+}
+
+/** 一次压缩任务的持久化历史记录（optimization_history） */
+export interface HistoryRecord {
+  id: string;
+  /** epoch ms */
+  createTime: number;
+  taskName: string;
+  fileCount: number;
+  beforeSize: number;
+  afterSize: number;
+  savedSize: number;
+  savedPercent: number;
+  durationMs: number;
+  outputDir: string;
+}
+
+/** 历史记录聚合视图：累计数据 + 记录列表（新记录在前） */
+export interface HistorySummary {
+  /** 累计优化图片数量（所有记录 fileCount 之和） */
+  totalCount: number;
+  /** 累计节省空间（字节） */
+  totalSaved: number;
+  records: HistoryRecord[];
 }
 
 export interface InstallErrorEvent {
@@ -167,6 +197,8 @@ export interface AppApi {
   // 扫描 / 文件
   scan(request: ScanRequest): Promise<FileEntry[]>;
   thumbnail(path: string): Promise<ThumbnailResponse>;
+  /** 读取图片宽高（结果弹窗前后对比展示用；webp/gif 等无文件头可解析时返回 null） */
+  imageInfo(path: string): Promise<{ width: number; height: number } | null>;
   openInExplorer(path: string): Promise<void>;
   // 任务
   startTask(request: TaskStartRequest): Promise<{ taskId: string }>;
@@ -180,6 +212,9 @@ export interface AppApi {
   getSettings(): Promise<Settings>;
   setSettings(patch: Partial<Settings>): Promise<Settings>;
   resetSettings(): Promise<Settings>;
+  // 历史优化记录
+  getHistory(): Promise<HistorySummary>;
+  clearHistory(): Promise<void>;
   // 应用 / 窗口
   getVersion(): Promise<string>;
   getSystemTheme(): Promise<ResolvedTheme>;
@@ -217,6 +252,7 @@ export const IPC = {
   dialogPickOutputDir: "dialog:pickOutputDir",
   fsScan: "fs:scan",
   fsThumbnail: "fs:thumbnail",
+  fsImageInfo: "fs:imageInfo",
   fsOpenInExplorer: "fs:openInExplorer",
   taskStart: "task:start",
   taskCancel: "task:cancel",
@@ -227,6 +263,8 @@ export const IPC = {
   settingsGet: "settings:get",
   settingsSet: "settings:set",
   settingsReset: "settings:reset",
+  historyGet: "history:get",
+  historyClear: "history:clear",
   appGetVersion: "app:getVersion",
   appGetSystemTheme: "app:getSystemTheme",
   windowControl: "window:control",

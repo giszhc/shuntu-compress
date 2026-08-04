@@ -16,9 +16,9 @@ import {
 } from "lucide-react";
 import { memo } from "react";
 import type { FileEntry } from "../../../shared/ipc-types";
-import { useUiStore } from "../stores/uiStore";
 import type { ItemState } from "../stores/fileStore";
 import { formatBytes, formatSaving } from "../utils/format";
+import { openFolder } from "../utils/openFolder";
 
 interface FileProps {
   entry: FileEntry;
@@ -115,7 +115,7 @@ export const FileRow = memo(function FileRow({
           type="button"
           title="打开所在目录"
           disabled={running || item?.status !== "done"}
-          onClick={() => void window.app.openInExplorer(item?.output ?? entry.absolutePath)}
+          onClick={() => void openFolder(item?.output ?? entry.absolutePath)}
         >
           <FolderOpen size={14} />
         </button>
@@ -208,17 +208,10 @@ export const DirRow = memo(function DirRow({
   top,
   onRemoveDir
 }: DirProps): React.JSX.Element {
-  const toast = useUiStore(s => s.toast);
   // 至少一项成功即可打开输出文件夹。输出目录取首个 done 项 output 的父目录，
   // 不自行拼接 rootDir/compressed —— 用户可能设置了自定义输出目录（params.outputDir）。
   const canOpenOutput = agg.done > 0;
   const outputDir = canOpenOutput ? agg.outputDir : null;
-  const handleOpenOutput = () => {
-    if (!outputDir) return;
-    window.app
-      .openInExplorer(outputDir)
-      .catch(() => toast("输出文件夹不存在或已被移动", "error"));
-  };
   return (
     <div className="file-row dir-row" style={{ top }}>
       <div className="file-icon file-icon--dir">
@@ -243,7 +236,9 @@ export const DirRow = memo(function DirRow({
             canOpenOutput ? "打开输出文件夹" : "尚未产出文件，暂不可打开"
           }
           disabled={!canOpenOutput}
-          onClick={handleOpenOutput}
+          onClick={() => {
+            if (outputDir) void openFolder(outputDir);
+          }}
         >
           <FolderOpen size={14} />
         </button>

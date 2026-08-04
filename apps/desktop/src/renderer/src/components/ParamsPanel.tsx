@@ -12,7 +12,9 @@ import {
   Gauge,
   Layers,
   Maximize2,
-  RotateCcw
+  RotateCcw,
+  Settings,
+  Sparkles
 } from "lucide-react";
 import { useSettingsStore } from "../stores/settingsStore";
 import { useTaskStore } from "../stores/taskStore";
@@ -80,6 +82,66 @@ export function ParamsPanel(): React.JSX.Element {
   return (
     <aside className="compress-params">
       <div className="compress-params-scroll">
+        {/* ---------- 优化模式：智能优化（默认）/ 高级设置 ---------- */}
+        <section className="compress-params-section">
+          <div className="compress-params-header">
+            <span className="compress-params-icon compress-params-icon--purple">
+              <Sparkles size={15} />
+            </span>
+            <span className="compress-params-label">优化模式</span>
+          </div>
+          <div className="compress-params-card">
+            <div className="compress-mode-grid">
+              <button
+                type="button"
+                className={params.mode === "smart" ? "active" : ""}
+                disabled={running}
+                onClick={() => setParam("mode", "smart")}
+              >
+                <span className="compress-mode-icon">
+                  <Sparkles size={16} />
+                </span>
+                <span className="compress-mode-name">智能优化</span>
+                <span className="compress-mode-desc">自动选择最佳格式与质量</span>
+              </button>
+              <button
+                type="button"
+                className={params.mode === "manual" ? "active" : ""}
+                disabled={running}
+                onClick={() => setParam("mode", "manual")}
+              >
+                <span className="compress-mode-icon">
+                  <Settings size={16} />
+                </span>
+                <span className="compress-mode-name">高级设置</span>
+                <span className="compress-mode-desc">手动调整全部参数</span>
+              </button>
+            </div>
+            <div className="compress-params-hint">
+              {params.mode === "smart"
+                ? "无需选择参数，软件按图片类型自动决策。"
+                : "切换到手动模式可自定义质量、尺寸与格式。"}
+            </div>
+          </div>
+        </section>
+
+        {/* 智能模式说明卡 */}
+        {params.mode === "smart" && (
+          <section className="compress-params-section">
+            <div className="compress-params-card compress-smart-card">
+              <div className="compress-smart-title">✨ 一键智能优化</div>
+              <ul className="compress-smart-list">
+                <li>照片类（JPG / TIFF / BMP）→ WebP，质量 80</li>
+                <li>PNG → WebP，保留透明通道</li>
+                <li>GIF 动图保持原格式，SVG 无损栅格化</li>
+                <li>保持原图尺寸，绝不放大或糊图</li>
+              </ul>
+            </div>
+          </section>
+        )}
+
+        {params.mode === "manual" && (
+        <>
         {/* ---------- 压缩质量（无质量参数的格式隐藏：GIF / ICO） ---------- */}
         {!NO_QUALITY_EXTS.has(params.ext ?? "") && (
         <section className="compress-params-section">
@@ -271,8 +333,10 @@ export function ParamsPanel(): React.JSX.Element {
             </div>
           </div>
         </section>
+        </>
+        )}
 
-        {/* ---------- 开关组：递归扫描 + 保留目录结构 ---------- */}
+        {/* ---------- 开关组：递归扫描 + 保留目录结构（两种模式均可用） ---------- */}
         <section className="compress-params-section">
           <div className="compress-params-header">
             <span className="compress-params-icon compress-params-icon--green">

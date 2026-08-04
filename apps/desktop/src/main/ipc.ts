@@ -6,6 +6,7 @@ import { ConfigError } from "@giszhc/vips-thumbnail-core";
 import { IPC, IPC_EVENTS } from "../shared/ipc-types";
 import type { DialogService } from "./services/dialogService";
 import type { FeedbackService } from "./services/feedbackService";
+import type { HistoryService } from "./services/historyService";
 import type { ProcessService } from "./services/processService";
 import type { SettingsService } from "./services/settingsService";
 import type { ThumbnailService } from "./services/thumbnailService";
@@ -28,6 +29,7 @@ export interface Services {
   thumbnail: ThumbnailService;
   dialog: DialogService;
   settings: SettingsService;
+  history: HistoryService;
   update: UpdateService;
   feedback: FeedbackService;
 }
@@ -63,6 +65,9 @@ export function registerIpc(services: Services): void {
     const filePath = assertAbsolutePath(raw, "文件路径");
     return { dataUrl: await services.thumbnail.get(filePath) };
   });
+  ipcMain.handle(IPC.fsImageInfo, (_event, raw) =>
+    services.process.imageInfo(assertAbsolutePath(raw, "文件路径"))
+  );
   ipcMain.handle(IPC.fsOpenInExplorer, (_event, raw) =>
     services.dialog.openInExplorer(assertAbsolutePath(raw, "路径"))
   );
@@ -91,6 +96,10 @@ export function registerIpc(services: Services): void {
     services.settings.set(validateSettingsPatch(raw))
   );
   ipcMain.handle(IPC.settingsReset, () => services.settings.reset());
+
+  // ---- 历史优化记录 ----
+  ipcMain.handle(IPC.historyGet, () => services.history.get());
+  ipcMain.handle(IPC.historyClear, () => services.history.clear());
 
   // ---- 应用 / 窗口 ----
   ipcMain.handle(IPC.appGetVersion, () => app.getVersion());

@@ -11,7 +11,9 @@ import {
   isAbortError,
   planOutputs,
   processImage,
-  scanPathsAsync
+  readImageInfoFromFile,
+  scanPathsAsync,
+  suggestSmartOptions
 } from "@giszhc/vips-thumbnail-core";
 import type {
   FileEntry,
@@ -55,6 +57,15 @@ export class ProcessService {
     return this.running !== null;
   }
 
+  /** 读取单张图片的宽高（结果弹窗「前后对比」使用；解析失败返回 null） */
+  async imageInfo(
+    filePath: string
+  ): Promise<{ width: number; height: number } | null> {
+    const info = await readImageInfoFromFile(filePath);
+    if (!info || info.width <= 0 || info.height <= 0) return null;
+    return { width: info.width, height: info.height };
+  }
+
   async scan(request: ScanRequest): Promise<FileEntry[]> {
     // 列表不展示尺寸/缩略图，跳过逐文件解析图片头；进度事件节流，避免海量文件时 IPC 风暴
     let lastEmit = 0;
@@ -82,7 +93,7 @@ export class ProcessService {
   async start(request: TaskStartRequest): Promise<{ taskId: string }> {
     logInfo(
       "task",
-      `start 请求：files=${request.entries.length} mode=${request.mode} concurrency=${request.concurrency} outputDir=${request.outputDir ?? "(源目录/compressed)"} options=${JSON.stringify(request.options)}`
+      `start 请求：files=${request.entries.length} mode=${request.mode} concurrency=${request.concurrency} outputDir=${request.outputDir ?? "(源目录/compressed)"} smart=${request.smart === true} name=${request.name ?? "图片优化"} options=${JSON.stringify(request.options)}`
     );
     if (this.running) {
       throw new ConfigError("已有任务进行中，请先取消或等待完成");
@@ -92,6 +103,11 @@ export class ProcessService {
 
     const taskId = `task-${++this.taskCounter}`;
     const startedAt = Date.now();
+    // 智能模式：每个文件按其格式独立决策（照片→WebP、动图保持、SVG→PNG 等）
+    const smart = request.smart === true;
+    const resolveOptions = (entry: FileEntry) =>
+      smart ? suggestSmartOptions(entry.ext) : request.options;
+    const taskName = request.name?.trim() || "图片优化";
 
     // 输出规划：全局去重、永不覆盖原图
     const planRequests: OutputPlanRequest[] = request.entries.map(entry => ({
@@ -100,7 +116,7 @@ export class ProcessService {
         request.outputDir ??
         path.join(entry.rootDir, DEFAULT_OUTPUT_DIR_NAME),
       mode: request.mode,
-      ext: request.options.ext,
+      ext: resolveOptions(entry).ext,
       baseDir: entry.rootDir,
       dedup: true
     }));
@@ -137,7 +153,7 @@ export class ProcessService {
               await fs.promises.mkdir(path.dirname(output), { recursive: true });
               logInfo("item", `输出目录已就绪：${path.dirname(output)}`);
               await processImage(entry.absolutePath, output, {
-                ...request.options,
+                ...resolveOptions(entry),
                 vipsCommand,
                 signal
               });
@@ -218,7 +234,7 @@ export class ProcessService {
 
       const summary = summarize(results, startedAt, request);
       logInfo("task", `任务结束：${JSON.stringify(summary)}`);
-      this.events.onTaskFinished({ taskId, summary, results });
+      this.events.onTaskFinished({ taskId, summary, results, name: taskName });
       logInfo("task", "finished 事件已推送");
     })().catch(err => {
       // 队列结构性异常（非单项失败）兜底记录，避免未捕获 rejection 杀掉主进程

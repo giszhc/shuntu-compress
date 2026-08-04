@@ -4,7 +4,7 @@
 import { create } from "zustand";
 import type { InstallProgress, UpdateStatusEvent } from "../../../shared/ipc-types";
 
-export type Page = "main" | "settings" | "about";
+export type Page = "main" | "history" | "settings" | "about";
 export type ToastKind = "info" | "success" | "error";
 
 export interface ToastItem {

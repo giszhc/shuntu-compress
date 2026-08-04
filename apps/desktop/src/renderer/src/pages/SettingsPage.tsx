@@ -37,7 +37,7 @@ export function SettingsPage(): React.JSX.Element {
     <div className="page">
       <header className="settings-header">
         <h1>设置</h1>
-        <p className="subtitle">自定义瞬图压缩的行为与外观</p>
+        <p className="subtitle">自定义瞬图优化的行为与外观</p>
       </header>
 
       {/* 默认压缩参数 */}

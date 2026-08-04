@@ -1,4 +1,4 @@
-# 瞬图压缩（桌面端）
+# 瞬图优化（桌面端）
 
 跨平台图片压缩桌面应用。拖入图片或文件夹，一键批量压缩，输出永不覆盖原图。
 
@@ -64,7 +64,7 @@ pnpm dev              # 开发模式（热更新）
   - macOS（Intel）：https://gitee.com/giszhc/application-software/raw/main/%E7%9E%AC%E5%9B%BE%E5%8E%8B%E7%BC%A9/shuntu-desktop-x64.dmg
 - 发布流程：
   1. `pnpm dist:win`（Windows）/ `pnpm dist:mac:universal` 或 `dist:mac:arm64` + `dist:mac:x64`（macOS）完成打包；
-  2. `pnpm publish:application` 自动上传安装包到 Gitee 的 `application-software` 仓库 `瞬图压缩/` 目录并推送；
+  2. `pnpm publish:application` 自动上传安装包到 Gitee 的 `application-software` 仓库 `瞬图优化/` 目录并推送；
   3. 提交并推送 `main`，GitHub Actions 自动部署 `docs/` 静态官网到 Pages。
 
 ## License

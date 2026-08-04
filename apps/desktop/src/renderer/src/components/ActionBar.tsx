@@ -2,8 +2,9 @@
  * 底部操作栏：统计信息 + 进度条 + 开始/取消按钮。
  * 视觉与设计图保持一致：左侧带图标的文件统计，中间进度条，右侧主操作按钮。
  */
-import { FolderOpen, Loader2, Play, Square } from "lucide-react";
+import { FolderOpen, Loader2, Play, Sparkles, Square } from "lucide-react";
 import { useFileStore } from "../stores/fileStore";
+import { useSettingsStore } from "../stores/settingsStore";
 import { useTaskStore } from "../stores/taskStore";
 import { formatBytes } from "../utils/format";
 
@@ -15,6 +16,7 @@ export function ActionBar(): React.JSX.Element {
   const progress = useTaskStore(s => s.progress);
   const start = useTaskStore(s => s.start);
   const cancel = useTaskStore(s => s.cancel);
+  const mode = useSettingsStore(s => s.params.mode);
 
   const totalSize = entries.reduce((sum, e) => sum + e.size, 0);
   const percent = progress?.percent ?? 0;
@@ -78,7 +80,15 @@ export function ActionBar(): React.JSX.Element {
             disabled={entries.length === 0 || scanning}
             onClick={() => void start()}
           >
-            <Play size={15} /> 开始压缩
+            {mode === "smart" ? (
+              <>
+                <Sparkles size={15} /> 智能优化
+              </>
+            ) : (
+              <>
+                <Play size={15} /> 开始压缩
+              </>
+            )}
           </button>
         )}
       </div>
